@@ -36,9 +36,7 @@ class DocumentOut(BaseModel):
     updated_at: datetime
     completed_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class DocumentListOut(BaseModel):
@@ -54,9 +52,7 @@ class DocumentListOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class DocumentListResponse(BaseModel):
