@@ -1,0 +1,32 @@
+INVOICE #INV-2024-001
+Date: January 15, 2024
+Due Date: February 15, 2024
+
+FROM:
+TechSolutions Pvt Ltd
+123 MG Road, Jaipur, Rajasthan 302001
+GST: 08AAACT2727Q1ZW
+
+TO:
+Acme Corp
+456 Business Park, Mumbai, Maharashtra 400001
+
+ITEMS:
+1. Web Development Services    - 40hrs @ ₹2,500/hr   = ₹1,00,000
+2. API Integration             - 20hrs @ ₹2,500/hr   = ₹50,000
+3. Cloud Infrastructure Setup  - 10hrs @ ₹3,000/hr   = ₹30,000
+4. Maintenance Support (3mo)   - Flat fee             = ₹25,000
+
+SUBTOTAL:  ₹2,05,000
+GST (18%): ₹36,900
+TOTAL:     ₹2,41,900
+
+Payment: NEFT/RTGS
+Bank: HDFC Bank
+Account: 50100123456789
+IFSC: HDFC0001234
+
+Terms: Payment due within 30 days.
+Late fee: 2% per month after due date.
+
+Thank you for your business!

@@ -1,0 +1,20 @@
+{
+  "title": "Sample Invoice",
+  "category": "Financial / Invoice",
+  "summary": "INVOICE #INV-2024-001 Date: January 15, 2024 Due Date: February 15, 2024  FROM: TechSolutions Pvt Ltd 123 MG Road, Jaipur, Rajasthan 302001 GST: 08AAACT2727Q1ZW  TO: Acme Corp ...",
+  "extracted_keywords": ["invoice", "payment", "gst", "total", "services", "development", "integration", "maintenance", "bank", "hdfc"],
+  "word_count": 112,
+  "character_count": 687,
+  "language": "en",
+  "file_metadata": {
+    "filename": "sample_invoice.txt",
+    "file_type": ".txt",
+    "file_size_bytes": 687,
+    "file_size_kb": 0.67
+  },
+  "processing_info": {
+    "text_extracted": true,
+    "pages_estimated": 1
+  },
+  "status": "extracted"
+}

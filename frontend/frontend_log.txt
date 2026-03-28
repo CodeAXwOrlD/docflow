@@ -1,0 +1,19 @@
+
+> docflow-frontend@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.3
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.8s (461 modules)
+ ✓ Compiled in 151ms (461 modules)
+ HEAD / 200 in 3165ms
+ HEAD / 200 in 12ms
+ ✓ Compiled in 1624ms (265 modules)
+ ✓ Compiled in 936ms (211 modules)
+ ✓ Compiled in 206ms (211 modules)
+ ✓ Compiled in 251ms (211 modules)
+ ✓ Compiled in 180ms (211 modules)

@@ -1,0 +1,9 @@
+employee_id,name,department,designation,salary,join_date,location
+E001,Arjun Sharma,Engineering,Senior Developer,85000,2021-03-15,Jaipur
+E002,Priya Singh,Design,UI/UX Designer,72000,2022-01-10,Jaipur
+E003,Rahul Verma,Engineering,Backend Engineer,78000,2021-07-20,Bangalore
+E004,Neha Gupta,Product,Product Manager,95000,2020-11-05,Mumbai
+E005,Vikram Patel,Engineering,DevOps Engineer,82000,2022-04-18,Pune
+E006,Anjali Mehta,Marketing,Growth Lead,68000,2023-01-25,Delhi
+E007,Suresh Kumar,Engineering,Data Engineer,80000,2021-09-12,Hyderabad
+E008,Divya Nair,Engineering,Frontend Developer,75000,2022-06-30,Kochi
