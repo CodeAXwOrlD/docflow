@@ -8,7 +8,7 @@ celery==5.3.6
 redis==5.0.4
 python-multipart==0.0.9
 python-dotenv==1.0.1
-pydantic==2.7.1
+pydantic==1.10.13
 pydantic-settings==2.2.1
 aiofiles==23.2.1
 python-magic==0.4.27
