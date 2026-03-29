@@ -13,14 +13,6 @@
 
 ---
 
-## 📸 Preview
-
-<p align="center">
-  <img src="Screenshot from 2026-03-28 03-34-50.png" alt="DocFlow Dashboard" width="700" />
-</p>
-
----
-
 ## ✨ Features
 
 | | Feature | Description |
@@ -194,18 +186,6 @@ make dev-frontend
 | `make test` | Run backend tests |
 | `make test-cov` | Run tests with coverage |
 | `make clean-uploads` | Delete all uploaded files |
-
----
-
-## 📂 Sample Files
-
-The `sample_files/` directory includes test documents you can upload right away:
-
-- `sample_invoice.txt` — A plain-text invoice
-- `sample_report.md` — A Markdown report
-- `sample_employees.csv` — A CSV of employee records
-- `sample_data.json` — A structured JSON payload
-- `sample_exported_output.csv` / `.json` — Example export outputs
 
 ---
 
