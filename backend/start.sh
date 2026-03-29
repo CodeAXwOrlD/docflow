@@ -1,7 +1,8 @@
 #!/bin/bash
+set -e
 
-# Start Celery worker in background
-celery -A app.workers.celery_app worker --loglevel=info --pool=solo &
+echo "Starting Celery worker in background..."
+celery -A app.workers.celery_app worker --loglevel=info --pool=solo --concurrency=1 &
 
-# Start FastAPI
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
+echo "Starting FastAPI server..."
+uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

@@ -14,8 +14,8 @@ export default function UploadPage() {
 
   const onDrop = useCallback((accepted: File[]) => {
     setFiles((prev) => {
-      const map = new Map(prev.map((f) => [f.name + f.size, f]));
-      accepted.forEach((f) => map.set(f.name + f.size, f));
+      const map = new Map(prev.map((f) => [f.name + f.size + f.lastModified, f]));
+      accepted.forEach((f) => map.set(f.name + f.size + f.lastModified, f));
       return Array.from(map.values());
     });
   }, []);
@@ -29,6 +29,7 @@ export default function UploadPage() {
       "text/csv": [".csv"],
       "application/json": [".json"],
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "application/msword": [".doc"],
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
     },
     maxSize: 50 * 1024 * 1024,
