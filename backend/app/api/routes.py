@@ -19,19 +19,26 @@ async def upload_documents(
     files: list[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db),
 ):
-    results = []
+    # Step 1: Save ALL files to DB first
+    docs = []
     for file in files:
         doc = await document_service.create_document(db, file)
-        # Dispatch Celery task
+        docs.append(doc)
+    await db.commit()
+
+    # Step 2: Queue ALL tasks together so they hit Redis at the same time
+    for doc in docs:
         task = process_document_task.apply_async(
             args=[doc.id, doc.file_path, doc.original_filename, doc.file_type, doc.file_size],
             task_id=None,
         )
         doc.celery_task_id = task.id
-        await db.commit()
+    await db.commit()
+
+    # Refresh all docs to return updated data
+    for doc in docs:
         await db.refresh(doc)
-        results.append(doc)
-    return results
+    return docs
 
 
 @router.get("/documents", response_model=DocumentListResponse)
