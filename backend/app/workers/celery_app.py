@@ -1,15 +1,31 @@
 import time
 import json
 import os
+import ssl
 from celery import Celery
 from app.core.config import settings
 from app.core.redis_client import publish_progress, get_sync_redis
 
+redis_url = settings.REDIS_URL
+
+# If using rediss:// (Render's Redis), append ssl_cert_reqs parameter
+broker_url = redis_url
+backend_url = redis_url
+if redis_url.startswith("rediss://"):
+    separator = "&" if "?" in redis_url else "?"
+    broker_url = redis_url + separator + "ssl_cert_reqs=CERT_NONE"
+    backend_url = redis_url + separator + "ssl_cert_reqs=CERT_NONE"
+
 celery_app = Celery(
     "docflow",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
+    broker=broker_url,
+    backend=backend_url,
 )
+
+# SSL options for the broker connection
+broker_use_ssl = None
+if redis_url.startswith("rediss://"):
+    broker_use_ssl = {"ssl_cert_reqs": ssl.CERT_NONE}
 
 celery_app.conf.update(
     task_serializer="json",
@@ -20,6 +36,8 @@ celery_app.conf.update(
     task_track_started=True,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    broker_use_ssl=broker_use_ssl,
+    redis_backend_use_ssl=broker_use_ssl,
 )
 
 

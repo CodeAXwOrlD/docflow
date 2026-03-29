@@ -1,3 +1,4 @@
+import ssl
 import redis.asyncio as aioredis
 import redis as sync_redis
 from app.core.config import settings
@@ -5,18 +6,27 @@ from app.core.config import settings
 _async_redis_client = None
 _sync_redis_client = None
 
+# Build SSL kwargs if using rediss://
+_ssl_kwargs = {}
+if settings.REDIS_URL.startswith("rediss://"):
+    _ssl_kwargs["ssl_cert_reqs"] = None  # equivalent to ssl.CERT_NONE
+
 
 async def get_async_redis():
     global _async_redis_client
     if _async_redis_client is None:
-        _async_redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        _async_redis_client = aioredis.from_url(
+            settings.REDIS_URL, decode_responses=True, **_ssl_kwargs
+        )
     return _async_redis_client
 
 
 def get_sync_redis():
     global _sync_redis_client
     if _sync_redis_client is None:
-        _sync_redis_client = sync_redis.from_url(settings.REDIS_URL, decode_responses=True)
+        _sync_redis_client = sync_redis.from_url(
+            settings.REDIS_URL, decode_responses=True, **_ssl_kwargs
+        )
     return _sync_redis_client
 
 
