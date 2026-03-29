@@ -1,20 +1,37 @@
-# 📄 DocFlow 
+# 📄 DocFlow
 
 > **An Enterprise-Grade Async Document Processing Workflow System**
 >
-> Modern web application for uploading, processing, tracking, reviewing, and exporting data from large volumes of documents asynchronously without locking the UI.
+> Upload, process, track, review, and export data from large volumes of documents — all asynchronously, without ever locking the UI.
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
+
+---
+
+## 📸 Preview
+
+<p align="center">
+  <img src="Screenshot from 2026-03-28 03-34-50.png" alt="DocFlow Dashboard" width="700" />
+</p>
 
 ---
 
 ## ✨ Features
 
-- **🚀 Performance First**: Document processing is completely decoupled. Uploads are placed into a Redis/Celery queue instantly avoiding blocked HTTP requests.
-- **⚡ Real-Time Tracking**: Utilizing Server-Sent Events (SSE) combined with Redis Pub/Sub, the frontend maintains a live pipeline view of exactly what stage processing your document is at.
-- **🛠 Interactive Review**: Once text and fields are extracted, reviewers can tweak, edit, and modify the JSON extraction in an inline editor before officially finalizing the document.
-- **🌗 Beautiful UI**: Features a meticulously designed, dark-mode/light-mode native UI built precisely with raw CSS and Next.js.
-- **🔁 Fault Tolerance**: Jobs that fail or hang can be automatically retried with idempotent retries right from the dashboard.
+| | Feature | Description |
+|---|---|---|
+| 🚀 | **Async Processing** | Document processing is completely decoupled — uploads are queued instantly via Redis/Celery, keeping HTTP requests lightning-fast. |
+| ⚡ | **Real-Time Tracking** | Live pipeline view powered by **Server-Sent Events (SSE)** + **Redis Pub/Sub**. See exactly what stage your document is at. |
+| 🛠 | **Interactive Review** | Reviewers can inspect, tweak, and edit the extracted JSON data in an inline editor before finalizing documents. |
+| 🌗 | **Dark / Light Mode** | Meticulously crafted UI with native dark-mode and light-mode support. |
+| 📂 | **Multi-Format Support** | Process **PDF**, **DOCX**, **XLSX**, **TXT**, **CSV**, **Markdown**, and **JSON** files out of the box. |
+| 🔁 | **Fault Tolerance** | Failed or stuck jobs can be retried with a single click directly from the dashboard. |
+| 📊 | **Celery Flower** | Built-in task monitoring dashboard at port `5555` for full visibility into worker health and queue depth. |
 
 ---
 
@@ -48,85 +65,162 @@ graph TD
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Next.js 14, React, TypeScript, Tailwind CSS |
-| **Backend API** | Python 3.11, FastAPI, SQLAlchemy (Async) |
-| **Message Broker** | Redis 7 (Pub/Sub & Queues) |
-| **Worker Engine** | Celery 5.3 |
+| **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
+| **Backend API** | Python 3.11, FastAPI 0.104, SQLAlchemy 2.0 (Async), Pydantic v2 |
+| **Message Broker** | Redis 7 (Pub/Sub & Task Queues) |
+| **Worker Engine** | Celery 5.3 with Flower monitoring |
 | **Database** | PostgreSQL 15 |
+| **File Parsing** | PyPDF2, python-docx, openpyxl |
 
 ---
 
 ## 🚀 Getting Started
 
-Follow these steps to run the application fully isolated on your local machine using standard `Makefile` targets. 
+### Option A — Docker Compose (Recommended)
 
-### Prerequisites
+Spin up the entire stack with a single command:
+
+```bash
+git clone https://github.com/indmadmax/docflow.git
+cd docflow
+```
+
+```bash
+# Build and start all services (Postgres, Redis, Backend, Worker, Flower, Frontend)
+make up
+
+# Or run in detached mode
+make up-d
+```
+
+| Service | URL |
+|---|---|
+| Frontend | [http://localhost:3000](http://localhost:3000) |
+| Backend API | [http://localhost:8000](http://localhost:8000) |
+| Swagger Docs | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| Celery Flower | [http://localhost:5555](http://localhost:5555) |
+
+```bash
+# Tail logs
+make logs
+
+# Stop everything
+make down
+
+# Stop and remove volumes (full reset)
+make down-v
+```
+
+---
+
+### Option B — Local Development
+
+#### Prerequisites
 
 - **Python 3.11+**
 - **Node.js 20+**
-- **Podman** or **Docker**
+- **PostgreSQL 15** and **Redis 7** running locally (or via Podman/Docker)
 
-### Installation
+#### 1. Clone & Install
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/indmadmax/docflow.git
-   cd docflow
-   ```
+```bash
+git clone https://github.com/indmadmax/docflow.git
+cd docflow
 
-2. **Start the Stateful Background Services**
-   Fire up instances of PostgreSQL and Redis.
-   *(Assuming you have existing containers or use docker-compose, but if not, here is the raw Podman equivalent)*:
-   ```bash
-   podman start postgres redis
-   ```
+make install-backend    # pip install -r requirements.txt
+make install-frontend   # npm install
+```
 
-3. **Install Dependencies**
-   ```bash
-   make install-backend
-   make install-frontend
-   ```
+#### 2. Environment Variables
 
-### Running the Application
+Create a `.env` file inside `backend/` with the following:
 
-To watch logs explicitly, open **3 separate terminal tabs** at the project root and start the application's components:
+```env
+DATABASE_URL=postgresql+asyncpg://docflow:docflow_secret@localhost:5432/docflow_db
+SYNC_DATABASE_URL=postgresql://docflow:docflow_secret@localhost:5432/docflow_db
+REDIS_URL=redis://localhost:6379/0
+UPLOAD_DIR=./uploads
+```
 
-**Terminal 1 (Backend API)**
+Create a `.env.local` file inside `frontend/`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+#### 3. Run (3 terminal tabs)
+
+**Terminal 1 — Backend API**
 ```bash
 make dev-backend
-# Serves the FastAPI at http://localhost:8000
+# → http://localhost:8000
 ```
 
-**Terminal 2 (Celery Worker)**
+**Terminal 2 — Celery Worker**
 ```bash
 make dev-worker
-# Connects to Redis and waits for uploads to process
+# Connects to Redis, waits for tasks
 ```
 
-**Terminal 3 (Next.js Frontend)**
+**Terminal 3 — Frontend**
 ```bash
 make dev-frontend
-# Serves the UI at http://localhost:3000
+# → http://localhost:3000
 ```
 
-> **🎉 Success!** Navigate your browser to [http://localhost:3000](http://localhost:3000) to upload your first document.
+> **🎉 Done!** Navigate to [http://localhost:3000](http://localhost:3000) to upload your first document.
 
-*(Pro-tip: Don't want 3 terminal tabs? Run them all in the background by passing `nohup` over the make commands!)*
+---
+
+## 📋 Makefile Reference
+
+| Command | Description |
+|---|---|
+| `make up` | Build & start all Docker services |
+| `make up-d` | Same, but detached |
+| `make down` | Stop all services |
+| `make down-v` | Stop & remove volumes |
+| `make logs` | Tail all service logs |
+| `make logs-worker` | Tail Celery worker logs only |
+| `make backend-shell` | Shell into the backend container |
+| `make db-shell` | Open a `psql` session |
+| `make redis-cli` | Open a `redis-cli` session |
+| `make install-backend` | Install Python dependencies |
+| `make install-frontend` | Install Node dependencies |
+| `make dev-backend` | Run backend locally |
+| `make dev-worker` | Run Celery worker locally |
+| `make dev-frontend` | Run frontend locally |
+| `make flower` | Start Celery Flower locally |
+| `make test` | Run backend tests |
+| `make test-cov` | Run tests with coverage |
+| `make clean-uploads` | Delete all uploaded files |
+
+---
+
+## 📂 Sample Files
+
+The `sample_files/` directory includes test documents you can upload right away:
+
+- `sample_invoice.txt` — A plain-text invoice
+- `sample_report.md` — A Markdown report
+- `sample_employees.csv` — A CSV of employee records
+- `sample_data.json` — A structured JSON payload
+- `sample_exported_output.csv` / `.json` — Example export outputs
 
 ---
 
 ## 📖 API Documentation
 
-The complete, interactive **Swagger UI** containing the definitions for all API endpoints automatically generates while the backend runs.
-You can explore it and test endpoints directly at:
+The interactive **Swagger UI** is auto-generated while the backend is running:
+
 👉 **[http://localhost:8000/docs](http://localhost:8000/docs)**
 
 ---
 
 ## 🛡️ License
 
-This project is licensed under the **MIT License**. See the `LICENSE` file for details.
+This project is licensed under the **MIT License**. See the [`LICENSE`](LICENSE) file for details.
 
 ---
 
-> Proudly built by **Akhil Agarwal**
+> Built with ❤️ by **Akhil Agarwal**
