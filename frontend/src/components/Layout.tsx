@@ -12,6 +12,7 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>({});
   const { theme, toggle } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     getStats().then((r) => setStats(r.data)).catch(() => {});
@@ -21,28 +22,127 @@ export default function Layout({ children }: LayoutProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // Close sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [router.pathname]);
+
   const navItems = [
     { href: "/", label: "Dashboard", icon: "⬡" },
     { href: "/upload", label: "Upload", icon: "↑" },
   ];
 
   return (
-    <div className="flex min-h-screen" style={{ background: "var(--bg-primary)" }}>
+    <div className="flex min-h-screen relative" style={{ background: "var(--bg-primary)" }}>
+      {/* Mobile top bar */}
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4"
+        style={{
+          height: 56,
+          background: "var(--sidebar-bg)",
+          borderBottom: "1px solid var(--border)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="flex items-center justify-center"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 10,
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--text-primary)",
+            fontSize: 22,
+          }}
+          aria-label="Toggle menu"
+        >
+          {sidebarOpen ? "✕" : "☰"}
+        </button>
+
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="4" y="3" width="11" height="14" rx="2" fill="white" opacity="0.9"/>
+              <rect x="7" y="3" width="11" height="14" rx="2" fill="white" opacity="0.6" transform="rotate(6,12,10)"/>
+              <rect x="4" y="3" width="11" height="14" rx="2" fill="white"/>
+              <rect x="6.5" y="6.5" width="6" height="1.5" rx="0.75" fill="#4f46e5"/>
+              <rect x="6.5" y="9.5" width="8" height="1" rx="0.5" fill="#818cf8"/>
+              <circle cx="17" cy="17" r="4" fill="#22c55e"/>
+              <path d="M15 17l1.5 1.5L19 15" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <span style={{
+            fontSize: 17,
+            fontWeight: 800,
+            fontFamily: "'Space Grotesk', sans-serif",
+            color: "var(--text-primary)",
+          }}>
+            Doc<span style={{ color: "var(--accent-light)" }}>Flow</span>
+          </span>
+        </div>
+
+        {/* Theme toggle in mobile header */}
+        <button
+          onClick={toggle}
+          className="flex items-center justify-center"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 10,
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            fontSize: 20,
+          }}
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? "🌙" : "☀️"}
+        </button>
+      </div>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40"
+          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className="w-56 flex-shrink-0 flex flex-col gap-2 p-4"
+        className={`
+          fixed md:sticky top-0 left-0 z-40
+          w-64 md:w-56 flex-shrink-0 flex flex-col gap-2 p-4
+          transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
+        `}
         style={{
           background: "var(--sidebar-bg)",
           borderRight: "1px solid var(--border)",
           boxShadow: "var(--shadow)",
-          position: "sticky",
-          top: 0,
           height: "100vh",
+          overflowY: "auto",
+          paddingTop: sidebarOpen ? 64 : undefined,
         }}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-2 mb-8 mt-3">
-          {/* Logo mark */}
+        {/* Logo - hidden on mobile (shown in top bar instead) */}
+        <div className="hidden md:flex items-center gap-3 px-2 mb-8 mt-3">
           <div
             style={{
               width: 40,
@@ -56,7 +156,6 @@ export default function Layout({ children }: LayoutProps) {
               flexShrink: 0,
             }}
           >
-            {/* SVG icon inside logo */}
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <rect x="4" y="3" width="11" height="14" rx="2" fill="white" opacity="0.9"/>
               <rect x="7" y="3" width="11" height="14" rx="2" fill="white" opacity="0.6" transform="rotate(6,12,10)"/>
@@ -68,8 +167,6 @@ export default function Layout({ children }: LayoutProps) {
               <path d="M15 17l1.5 1.5L19 15" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-
-          {/* Wordmark */}
           <div>
             <div style={{
               fontSize: 20,
@@ -100,6 +197,7 @@ export default function Layout({ children }: LayoutProps) {
               key={item.href}
               href={item.href}
               className={`nav-item ${router.pathname === item.href ? "active" : ""}`}
+              style={{ minHeight: 44 }}
             >
               <span className="text-base">{item.icon}</span>
               {item.label}
@@ -133,11 +231,12 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </div>
 
+        {/* Theme toggle - desktop only (mobile has it in header) */}
         <button
           onClick={toggle}
+          className="hidden md:flex"
           style={{
             width: "100%",
-            display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "10px 14px",
@@ -146,6 +245,7 @@ export default function Layout({ children }: LayoutProps) {
             background: "var(--bg-card-hover)",
             cursor: "pointer",
             marginBottom: 8,
+            minHeight: 44,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -154,8 +254,6 @@ export default function Layout({ children }: LayoutProps) {
               {theme === "dark" ? "Dark mode" : "Light mode"}
             </span>
           </div>
-
-          {/* Toggle pill */}
           <div style={{
             width: 36,
             height: 20,
@@ -186,7 +284,7 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 min-w-0 overflow-auto grid-bg">
+      <main className="flex-1 min-w-0 overflow-auto grid-bg pt-14 md:pt-0">
         {children}
       </main>
     </div>

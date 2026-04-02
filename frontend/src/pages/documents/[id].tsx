@@ -7,7 +7,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import ProgressBar from "@/components/ui/ProgressBar";
 import {
   getDocument, updateReview, finalizeDocument, retryDocument,
-  exportDocument, retryDocument as retryDoc,
+  exportDocument, retryDocument as retryDoc, getSSEUrl,
   Document, ProgressEvent, formatFileSize,
 } from "@/lib/api";
 import { formatDistanceToNow, format } from "date-fns";
@@ -40,7 +40,6 @@ export default function DocumentDetailPage() {
   const [editData, setEditData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const sseRef = useRef<EventSource | null>(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const fetchDoc = async () => {
     if (!id) return;
@@ -64,7 +63,7 @@ export default function DocumentDetailPage() {
 
     const connectSSE = () => {
       if (sseRef.current) sseRef.current.close();
-      const es = new EventSource(`${API_URL}/api/v1/documents/${id}/stream`);
+      const es = new EventSource(getSSEUrl(id));
       sseRef.current = es;
       es.onmessage = (e) => {
         try {
@@ -128,7 +127,7 @@ export default function DocumentDetailPage() {
       setEvents([]);
       fetchDoc();
       setTimeout(() => {
-        const es = new EventSource(`${API_URL}/api/v1/documents/${id}/stream`);
+        const es = new EventSource(getSSEUrl(id));
         sseRef.current = es;
         es.onmessage = (e) => {
           try {
@@ -150,7 +149,7 @@ export default function DocumentDetailPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="p-8 flex flex-col gap-4">
+        <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-4">
           {[...Array(4)].map((_, i) => <div key={i} className="shimmer h-24 rounded-xl" />)}
         </div>
       </Layout>
@@ -165,18 +164,20 @@ export default function DocumentDetailPage() {
 
   return (
     <Layout>
-      <div style={{
-        padding: "20px 32px",
-        borderBottom: "1px solid var(--border)",
-        background: "var(--bg-card)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-        backdropFilter: "blur(8px)",
-      }}>
+      <div
+        className="px-4 py-4 sm:px-6 md:px-8"
+        style={{
+          borderBottom: "1px solid var(--border)",
+          background: "var(--bg-card)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          backdropFilter: "blur(8px)",
+        }}
+      >
         <h1 style={{
           fontSize: 20,
           fontWeight: 700,
@@ -187,22 +188,22 @@ export default function DocumentDetailPage() {
           Document Details
         </h1>
       </div>
-      <div className="p-8 max-w-5xl mx-auto">
+      <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto">
         {/* Back */}
-        <Link href="/" className="btn btn-ghost text-xs mb-6 inline-flex">
+        <Link href="/" className="btn btn-ghost text-xs mb-4 sm:mb-6 inline-flex" style={{ minHeight: 44 }}>
           ← Back to Dashboard
         </Link>
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 md:mb-8">
+          <div className="min-w-0">
             <h1
-              className="text-2xl font-bold mb-2 break-all"
+              className="text-xl sm:text-2xl font-bold mb-2 break-all"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               {doc.original_filename}
             </h1>
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
               <StatusBadge status={doc.status} />
               <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
                 {doc.file_type} · {formatFileSize(doc.file_size)}
@@ -217,33 +218,33 @@ export default function DocumentDetailPage() {
               )}
             </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 flex-wrap">
             {doc.status === "failed" && (
-              <button className="btn btn-danger" onClick={handleRetry}>⟳ Retry</button>
+              <button className="btn btn-danger" onClick={handleRetry} style={{ minHeight: 44 }}>⟳ Retry</button>
             )}
             {(doc.status === "completed" || doc.status === "finalized") && currentData && (
               <>
-                <a href={exportDocument(doc.id, "json")} className="btn btn-ghost text-xs" download>
+                <a href={exportDocument(doc.id, "json")} className="btn btn-ghost text-xs" download style={{ minHeight: 44 }}>
                   ↓ JSON
                 </a>
-                <a href={exportDocument(doc.id, "csv")} className="btn btn-ghost text-xs" download>
+                <a href={exportDocument(doc.id, "csv")} className="btn btn-ghost text-xs" download style={{ minHeight: 44 }}>
                   ↓ CSV
                 </a>
               </>
             )}
             {doc.status === "completed" && doc.is_reviewed && (
-              <button className="btn btn-success" onClick={handleFinalize}>
+              <button className="btn btn-success" onClick={handleFinalize} style={{ minHeight: 44 }}>
                 ✓ Finalize
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left: Progress Timeline */}
           <div className="lg:col-span-1 flex flex-col gap-4">
             {/* Progress bar */}
-            <div className="card p-5">
+            <div className="card p-4 sm:p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
                   Progress
@@ -261,7 +262,7 @@ export default function DocumentDetailPage() {
             </div>
 
             {/* Stage timeline */}
-            <div className="card p-5">
+            <div className="card p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 Processing Stages
               </p>
@@ -313,12 +314,12 @@ export default function DocumentDetailPage() {
                 style={{ borderColor: "rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.05)" }}
               >
                 <p className="text-xs font-semibold mb-1" style={{ color: "#ef4444" }}>Error</p>
-                <p className="text-xs font-mono" style={{ color: "#f87171" }}>{doc.error_message}</p>
+                <p className="text-xs font-mono break-all" style={{ color: "#f87171" }}>{doc.error_message}</p>
               </div>
             )}
 
             {/* Metadata */}
-            <div className="card p-5">
+            <div className="card p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
                 Metadata
               </p>
@@ -340,7 +341,7 @@ export default function DocumentDetailPage() {
           {/* Right: Extracted Data + Review */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             {isActive && !currentData ? (
-              <div className="card p-8 text-center">
+              <div className="card p-6 sm:p-8 text-center">
                 <div className="text-4xl mb-4 spin-slow inline-block">⚙</div>
                 <p className="font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Processing…</p>
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -348,9 +349,9 @@ export default function DocumentDetailPage() {
                 </p>
               </div>
             ) : currentData ? (
-              <div className="card p-5">
+              <div className="card p-4 sm:p-5">
                 {/* Header row */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
                     <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                       Extracted Data
@@ -370,6 +371,7 @@ export default function DocumentDetailPage() {
                         }
                         setEditing(!editing);
                       }}
+                      style={{ minHeight: 44 }}
                     >
                       {editing ? "✕ Cancel" : "✎ Edit"}
                     </button>
@@ -389,7 +391,7 @@ export default function DocumentDetailPage() {
                       {editing ? (
                         typeof value === "object" ? (
                           <textarea
-                            className="input font-mono text-xs"
+                            className="input font-mono text-xs w-full"
                             rows={3}
                             value={JSON.stringify(value, null, 2)}
                             onChange={(e) => {
@@ -399,18 +401,20 @@ export default function DocumentDetailPage() {
                                 setEditData((prev) => ({ ...prev, [key]: e.target.value }));
                               }
                             }}
+                            style={{ minHeight: 44 }}
                           />
                         ) : (
                           <input
-                            className="input text-sm"
+                            className="input text-sm w-full"
                             value={String(value ?? "")}
                             onChange={(e) => setEditData((prev) => ({ ...prev, [key]: e.target.value }))}
+                            style={{ minHeight: 44 }}
                           />
                         )
                       ) : (
                         <div
                           className="rounded-lg px-3 py-2 text-sm font-mono"
-                          style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", wordBreak: "break-all" }}
+                          style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", wordBreak: "break-all", overflowX: "auto" }}
                         >
                           {typeof value === "object" ? JSON.stringify(value, null, 2) : String(value ?? "—")}
                         </div>
@@ -421,11 +425,11 @@ export default function DocumentDetailPage() {
 
                 {/* Save button */}
                 {editing && (
-                  <div className="flex gap-3 mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-                    <button className="btn btn-primary" onClick={handleSaveReview} disabled={saving}>
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                    <button className="btn btn-primary" onClick={handleSaveReview} disabled={saving} style={{ minHeight: 44 }}>
                       {saving ? "Saving…" : "✓ Save Review"}
                     </button>
-                    <button className="btn btn-ghost" onClick={() => { setEditing(false); setEditData(currentData as Record<string, unknown>); }}>
+                    <button className="btn btn-ghost" onClick={() => { setEditing(false); setEditData(currentData as Record<string, unknown>); }} style={{ minHeight: 44 }}>
                       Cancel
                     </button>
                   </div>
@@ -434,7 +438,7 @@ export default function DocumentDetailPage() {
                 {/* Finalize prompt */}
                 {doc.status === "completed" && doc.is_reviewed && !editing && (
                   <div
-                    className="mt-4 p-4 rounded-lg flex items-center justify-between"
+                    className="mt-4 p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)" }}
                   >
                     <div>
@@ -443,7 +447,7 @@ export default function DocumentDetailPage() {
                         Review complete. Lock this document as finalized.
                       </p>
                     </div>
-                    <button className="btn btn-success" onClick={handleFinalize}>
+                    <button className="btn btn-success" onClick={handleFinalize} style={{ minHeight: 44 }}>
                       ✓ Finalize
                     </button>
                   </div>
@@ -468,7 +472,7 @@ export default function DocumentDetailPage() {
 
             {/* Live SSE events log */}
             {events.length > 0 && (
-              <div className="card p-5">
+              <div className="card p-4 sm:p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
                   Live Events (SSE)
                 </p>
@@ -476,7 +480,7 @@ export default function DocumentDetailPage() {
                   {[...events].reverse().map((ev, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-3 py-2 px-3 rounded-lg text-xs"
+                      className="flex items-center gap-2 sm:gap-3 py-2 px-3 rounded-lg text-xs"
                       style={{ background: "var(--bg-secondary)", fontFamily: "'JetBrains Mono', monospace" }}
                     >
                       <span
@@ -485,10 +489,10 @@ export default function DocumentDetailPage() {
                       >
                         {ev.progress}%
                       </span>
-                      <span className="flex-1" style={{ color: "var(--text-secondary)" }}>
+                      <span className="flex-1 min-w-0 truncate" style={{ color: "var(--text-secondary)" }}>
                         {ev.message}
                       </span>
-                      <span style={{ color: "var(--text-muted)" }}>{ev.event}</span>
+                      <span className="hidden sm:inline flex-shrink-0" style={{ color: "var(--text-muted)" }}>{ev.event}</span>
                     </div>
                   ))}
                 </div>

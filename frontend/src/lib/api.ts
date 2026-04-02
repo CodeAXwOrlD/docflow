@@ -55,9 +55,8 @@ export interface Stats {
 export const uploadDocuments = (files: File[]) => {
   const form = new FormData();
   files.forEach((f) => form.append("files", f));
-  return api.post<Document[]>("/upload", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  // Do NOT set Content-Type header — let the browser set it with the correct multipart boundary
+  return api.post<Document[]>("/upload", form);
 };
 
 export const listDocuments = (params: {
@@ -86,6 +85,9 @@ export const exportDocument = (id: string, format: "json" | "csv") =>
   `${API_URL}/api/v1/documents/${id}/export/${format}`;
 
 export const getStats = () => api.get<Stats>("/stats");
+
+export const getSSEUrl = (id: string) =>
+  `${API_URL}/api/v1/documents/${id}/stream`;
 
 export const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`;

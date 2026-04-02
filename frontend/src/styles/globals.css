@@ -256,7 +256,6 @@ select.input option { background: var(--bg-card); }
 .data-table tr:hover td { background: var(--bg-card-hover); }
 .data-table tr:last-child td { border-bottom: none; }
 
-/* Stage timeline */
 .stage-dot {
   width: 10px; height: 10px;
   border-radius: 50%;
@@ -264,3 +263,54 @@ select.input option { background: var(--bg-card); }
   flex-shrink: 0;
 }
 .stage-line { width: 2px; min-height: 20px; margin: 0 auto; }
+
+/* Mobile-specific styles */
+@media (max-width: 767px) {
+  /* Ensure touch targets meet 44x44 minimum */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .nav-item {
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 1rem;
+  }
+
+  /* Make inputs larger on mobile */
+  .input {
+    min-height: 44px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Drop zone adjustments */
+  .drop-zone {
+    padding: 24px 16px;
+  }
+
+  /* Card adjustments */
+  .card {
+    border-radius: 12px;
+  }
+
+  /* Data table should not show on mobile - use card view instead */
+  .data-table {
+    display: none;
+  }
+}
+
+/* Ensure smooth transitions don't cause layout shift */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
