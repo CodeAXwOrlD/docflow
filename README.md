@@ -20,7 +20,6 @@
 | 🚀 | **Async Processing** | Document processing is completely decoupled — uploads are queued instantly via Redis/Celery, keeping HTTP requests lightning-fast. |
 | ⚡ | **Real-Time Tracking** | Live pipeline view powered by **Server-Sent Events (SSE)** + **Redis Pub/Sub**. See exactly what stage your document is at. |
 | 🛠 | **Interactive Review** | Reviewers can inspect, tweak, and edit the extracted JSON data in an inline editor before finalizing documents. |
-| 🌗 | **Dark / Light Mode** | Meticulously crafted UI with native dark-mode and light-mode support. |
 | 📂 | **Multi-Format Support** | Process **PDF**, **DOCX**, **XLSX**, **TXT**, **CSV**, **Markdown**, and **JSON** files out of the box. |
 | 🔁 | **Fault Tolerance** | Failed or stuck jobs can be retried with a single click directly from the dashboard. |
 | 📊 | **Celery Flower** | Built-in task monitoring dashboard at port `5555` for full visibility into worker health and queue depth. |
@@ -58,9 +57,9 @@ graph TD
 | Layer | Technology |
 |---|---|
 | **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
-| **Backend API** | Python 3.11, FastAPI 0.104, SQLAlchemy 2.0 (Async), Pydantic v2 |
+| **Backend API** | Python, FastAPI, SQLAlchemy (Async), Pydantic v2 |
 | **Message Broker** | Redis 7 (Pub/Sub & Task Queues) |
-| **Worker Engine** | Celery 5.3 with Flower monitoring |
+| **Worker Engine** | Celery with Flower monitoring |
 | **Database** | PostgreSQL 15 |
 | **File Parsing** | PyPDF2, python-docx, openpyxl |
 
