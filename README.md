@@ -56,7 +56,7 @@ graph TD
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
+| **Frontend** | Next.js 14, TypeScript, Tailwind CSS |
 | **Backend API** | Python, FastAPI, SQLAlchemy (Async), Pydantic v2 |
 | **Message Broker** | Redis 7 (Pub/Sub & Task Queues) |
 | **Worker Engine** | Celery with Flower monitoring |
