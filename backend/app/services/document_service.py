@@ -10,13 +10,18 @@ from app.core.config import settings
 import pathlib
 
 
-async def save_upload(file: UploadFile, upload_dir: str) -> tuple[str, str, int]:
-    """Save uploaded file to disk, return (file_path, file_ext, size)."""
+async def save_upload(file: UploadFile, upload_dir: str) -> tuple[str, str, str, int]:
+    """Save uploaded file to disk, return (file_path, unique_name, file_ext, size)."""
     upload_dir = os.path.abspath(upload_dir)
     os.makedirs(upload_dir, exist_ok=True)
-    ext = pathlib.Path(file.filename).suffix.lower()
-    if ext not in settings.ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"File type {ext} not allowed")
+    raw_filename = file.filename or "uploaded_document"
+    safe_name = pathlib.Path(raw_filename).name  # strips directory traversal '../'
+    ext = pathlib.Path(safe_name).suffix.lower()
+    if not ext or ext not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File extension '{ext}' is not permitted. Allowed: {', '.join(settings.ALLOWED_EXTENSIONS)}"
+        )
     unique_name = f"{uuid.uuid4()}{ext}"
     file_path = os.path.join(upload_dir, unique_name)
     size = 0
@@ -24,22 +29,25 @@ async def save_upload(file: UploadFile, upload_dir: str) -> tuple[str, str, int]
         while chunk := await file.read(1024 * 1024):
             size += len(chunk)
             if size > settings.MAX_FILE_SIZE_MB * 1024 * 1024:
-                os.remove(file_path)
-                raise HTTPException(status_code=413, detail="File too large")
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                raise HTTPException(status_code=413, detail=f"File exceeds maximum allowed size of {settings.MAX_FILE_SIZE_MB}MB")
             await out.write(chunk)
     return file_path, unique_name, ext, size
 
 
 async def create_document(db: AsyncSession, file: UploadFile) -> Document:
+    raw_filename = file.filename or "uploaded_document"
+    safe_name = pathlib.Path(raw_filename).name
     file_path, unique_name, ext, size = await save_upload(file, settings.UPLOAD_DIR)
     doc = Document(
         id=str(uuid.uuid4()),
         filename=unique_name,
-        original_filename=file.filename,
+        original_filename=safe_name,
         file_path=file_path,
         file_size=size,
         file_type=ext,
-        mime_type=file.content_type,
+        mime_type=file.content_type or "application/octet-stream",
         status=JobStatus.QUEUED,
     )
     db.add(doc)

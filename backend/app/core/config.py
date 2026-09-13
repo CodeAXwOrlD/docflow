@@ -12,9 +12,16 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_EXTENSIONS: list[str] = [".pdf", ".txt", ".docx", ".doc", ".csv", ".xlsx", ".json", ".md"]
     SECRET_KEY: str = "docflow-super-secret-key-change-in-production"
+    CORS_ORIGINS: str = "http://localhost:3000,https://docflow-sigma.vercel.app"
+    ENVIRONMENT: str = "development"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()

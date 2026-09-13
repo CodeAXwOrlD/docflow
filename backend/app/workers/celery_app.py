@@ -41,11 +41,25 @@ celery_app.conf.update(
 )
 
 
+from sqlalchemy import create_engine, text
+
+_sync_engine = None
+
+def get_worker_sync_engine():
+    global _sync_engine
+    if _sync_engine is None:
+        _sync_engine = create_engine(
+            settings.SYNC_DATABASE_URL,
+            pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=10,
+        )
+    return _sync_engine
+
+
 def _update_db_status(doc_id: str, status: str, progress: int, stage: str, error: str = None, result: dict = None):
-    """Synchronously update document status in PostgreSQL."""
-    from sqlalchemy import create_engine, text
-    from app.core.config import settings as s
-    engine = create_engine(s.SYNC_DATABASE_URL)
+    """Synchronously update document status in PostgreSQL using pooled connection."""
+    engine = get_worker_sync_engine()
     with engine.connect() as conn:
         status_db = status.upper()
         if result:
@@ -65,7 +79,6 @@ def _update_db_status(doc_id: str, status: str, progress: int, stage: str, error
             """), {"status": status_db, "progress": progress, "stage": stage,
                    "error": error, "doc_id": doc_id})
         conn.commit()
-    engine.dispose()
 
 
 def _extract_text_from_file(file_path: str, file_type: str) -> str:

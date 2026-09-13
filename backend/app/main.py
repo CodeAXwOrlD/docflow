@@ -17,6 +17,9 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
+from app.core.config import settings
+from fastapi import Request
+
 app = FastAPI(
     title="DocFlow API",
     description="Async Document Processing Workflow System",
@@ -24,13 +27,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://docflow-sigma.vercel.app",
-        "*",
-    ],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,4 +50,4 @@ app.include_router(router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "DocFlow API"}
+    return {"status": "ok", "service": "DocFlow API", "environment": settings.ENVIRONMENT}

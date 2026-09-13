@@ -44,6 +44,7 @@ export interface ProgressEvent {
 }
 
 export interface Stats {
+  [key: string]: number | undefined;
   queued?: number;
   processing?: number;
   completed?: number;

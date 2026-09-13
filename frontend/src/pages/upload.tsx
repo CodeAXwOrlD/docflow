@@ -1,12 +1,33 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { useRouter } from "next/router";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import Link from "next/link";
 import Layout from "@/components/Layout";
 import { uploadDocuments, formatFileSize } from "@/lib/api";
+import { 
+  UploadCloud, 
+  FileText, 
+  FileSpreadsheet, 
+  FileCode, 
+  Trash2, 
+  ArrowLeft, 
+  Sparkles, 
+  ShieldCheck, 
+  Zap, 
+  AlertCircle,
+  CheckCircle2,
+  FileUp,
+  Cpu
+} from "lucide-react";
 
-const ALLOWED = [".pdf", ".txt", ".docx", ".doc", ".csv", ".xlsx", ".json", ".md"];
-const ACCEPT_STRING = ".pdf,.txt,.docx,.doc,.csv,.xlsx,.json,.md";
+const getFileIcon = (fileName: string) => {
+  const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+  if (ext === ".csv" || ext === ".xlsx") return <FileSpreadsheet className="w-5 h-5 text-emerald-400" />;
+  if (ext === ".json") return <FileCode className="w-5 h-5 text-amber-400" />;
+  return <FileText className="w-5 h-5 text-indigo-400" />;
+};
 
 export default function UploadPage() {
   const router = useRouter();
@@ -44,183 +65,219 @@ export default function UploadPage() {
     setUploading(true);
     try {
       await uploadDocuments(files);
-      toast.success(`${files.length} document(s) queued for processing!`);
+      toast.success(`${files.length} document(s) dispatched to Celery cluster!`);
       router.push("/");
     } catch (err: unknown) {
       const error = err as { response?: { status?: number; data?: { detail?: string } }; message?: string };
       if (error?.response?.status === 413) {
-        toast.error("File too large. Maximum size is 50MB.");
-      } else if (error?.response?.status === 422) {
-        toast.error("Invalid file. Please check the file format.");
-      } else if (error?.response?.status && error.response.status >= 500) {
-        toast.error("Server error. Please try again later.");
+        toast.error("File exceeds maximum allowed size of 50MB.");
       } else if (error?.response?.data?.detail) {
         toast.error(error.response.data.detail);
-      } else if (error?.message?.includes("Network Error")) {
-        toast.error("Network error. Check your connection and try again.");
       } else {
-        toast.error("Upload failed. Please try again.");
+        toast.error("Upload failed. Please check network connection.");
       }
     } finally {
       setUploading(false);
     }
   };
 
-  const handleBrowseClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles && selectedFiles.length > 0) {
-      onDrop(Array.from(selectedFiles));
-    }
-    // Reset so same file can be selected again
-    e.target.value = "";
-  };
-
-  const FILE_ICONS: Record<string, string> = {
-    ".pdf": "📄", ".txt": "📝", ".md": "📝", ".csv": "📊",
-    ".xlsx": "📊", ".docx": "📋", ".doc": "📋", ".json": "🗃️",
-  };
+  const totalBytes = files.reduce((acc, f) => acc + f.size, 0);
 
   return (
     <Layout>
-      <div
-        className="px-4 py-4 sm:px-6 md:px-8"
-        style={{
-          borderBottom: "1px solid var(--border)",
-          background: "var(--bg-card)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <h1 style={{
-          fontSize: 20,
-          fontWeight: 700,
-          fontFamily: "'Space Grotesk', sans-serif",
-          color: "var(--text-primary)",
-          margin: 0,
-        }}>
-          Upload Document
-        </h1>
-      </div>
-      <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto">
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Upload Documents
-          </h1>
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Drag & drop or browse. Up to 50MB per file. Supported: {ALLOWED.join(", ")}
-          </p>
-        </div>
-
-        {/* Drop zone */}
-        <div
-          {...getRootProps()}
-          className={`drop-zone p-6 sm:p-12 text-center cursor-pointer mb-6 ${isDragActive ? "active" : ""}`}
-          style={{ minHeight: 180 }}
-        >
-          <input {...getInputProps()} accept={ACCEPT_STRING} />
-          <div className="text-4xl sm:text-5xl mb-4">{isDragActive ? "📂" : "☁️"}</div>
-          <p className="font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-            {isDragActive ? "Drop files here" : "Drag & drop files"}
-          </p>
-          <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>or click to browse</p>
-          <div className="flex flex-wrap gap-2 justify-center mt-4">
-            {ALLOWED.map((ext) => (
-              <span key={ext} className="badge" style={{ color: "var(--text-muted)", borderColor: "var(--border)" }}>
-                {ext}
-              </span>
-            ))}
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Top bar with back link */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Dashboard</span>
+          </Link>
+          <div className="flex items-center gap-2 text-xs text-indigo-400 font-semibold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Multi-Format Ingestion</span>
           </div>
         </div>
 
-        {/* Fallback browse button for mobile */}
-        <div className="mb-6">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPT_STRING}
-            multiple
-            onChange={handleFileInputChange}
-            style={{ display: "none" }}
-          />
-          <button
-            className="btn btn-ghost w-full justify-center"
-            onClick={handleBrowseClick}
-            style={{ minHeight: 48 }}
-            type="button"
-          >
-            📁 Browse Files
-          </button>
+        {/* Page Title */}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-heading">
+            Document Ingestion Studio
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Drop your documents here. They will be queued in Redis and processed asynchronously by our Celery worker cluster.
+          </p>
         </div>
 
-        {/* File list */}
-        {files.length > 0 && (
-          <div className="card p-4 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                {files.length} file{files.length > 1 ? "s" : ""} ready
-              </span>
-              <button
-                className="btn btn-ghost text-xs py-1"
-                onClick={() => setFiles([])}
-                style={{ minHeight: 44 }}
+        {/* DROPZONE BENTO CARD */}
+        <motion.div
+          whileHover={{ scale: 1.005 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div
+            {...getRootProps()}
+            className={`
+              relative p-8 sm:p-12 rounded-3xl border-2 border-dashed transition-all cursor-pointer text-center overflow-hidden
+              ${
+                isDragActive
+                  ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_50px_rgba(99,102,241,0.25)]"
+                  : "border-slate-800 hover:border-indigo-500/50 bg-[#0d1020]/70 hover:bg-[#0f1326]"
+              }
+            `}
+          >
+            <input {...getInputProps()} />
+
+            {/* Background Radial Glow */}
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 via-transparent to-transparent pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col items-center">
+              {/* Upload Icon with animated pulse */}
+              <motion.div
+                animate={isDragActive ? { scale: 1.15, y: -4 } : { scale: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-600/30 mb-4"
               >
-                Clear all
+                <UploadCloud className="w-8 h-8" />
+              </motion.div>
+
+              <h3 className="text-lg font-bold text-white mb-1">
+                {isDragActive ? "Release files to queue..." : "Drag & drop files here, or browse"}
+              </h3>
+              <p className="text-xs text-slate-400 max-w-sm mb-6 leading-relaxed">
+                Supports <strong className="text-slate-200">PDF, DOCX, XLSX, CSV, JSON, Markdown, and TXT</strong> up to 50MB per file.
+              </p>
+
+              <button
+                type="button"
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700 shadow-md transition-all cursor-pointer"
+              >
+                Browse Computer
               </button>
             </div>
-            <div className="flex flex-col gap-2">
-              {files.map((file, idx) => {
-                const ext = "." + file.name.split(".").pop()?.toLowerCase();
-                return (
+          </div>
+        </motion.div>
+
+        {/* STAGING QUEUE LIST (IF FILES SELECTED) */}
+        <AnimatePresence>
+          {files.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              className="p-5 sm:p-6 rounded-2xl border border-indigo-500/20 bg-[#0c0f1e] shadow-xl space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white">Staged for Ingestion ({files.length})</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Total payload: {formatFileSize(totalBytes)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setFiles([])}
+                  className="text-xs text-rose-400 hover:text-rose-300 font-medium transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+
+              {/* File list */}
+              <div className="divide-y divide-slate-800/60 max-h-64 overflow-y-auto pr-1">
+                {files.map((file, idx) => (
                   <div
-                    key={idx}
-                    className="flex items-center gap-3 p-3 rounded-lg"
-                    style={{ background: "var(--bg-secondary)" }}
+                    key={file.name + idx}
+                    className="py-3 flex items-center justify-between gap-3 group"
                   >
-                    <span className="text-2xl flex-shrink-0">{FILE_ICONS[ext] || "📎"}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                        {file.name}
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        {formatFileSize(file.size)} · {ext}
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center flex-shrink-0">
+                        {getFileIcon(file.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium text-white truncate max-w-sm">
+                          {file.name}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                          {formatFileSize(file.size)}
+                        </div>
+                      </div>
                     </div>
+
                     <button
-                      onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                      className="text-lg hover:opacity-70 transition-opacity flex-shrink-0"
-                      style={{ color: "var(--text-muted)", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+                      onClick={() => removeFile(idx)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      title="Remove from queue"
                     >
-                      ×
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                ))}
+              </div>
 
-        {/* Upload button */}
-        <button
-          className="btn btn-primary w-full justify-center py-3 text-base"
-          onClick={handleUpload}
-          disabled={files.length === 0 || uploading}
-          style={{ minHeight: 52 }}
-        >
-          {uploading ? (
-            <><span className="spin-slow inline-block">⚙</span> Uploading & queueing…</>
-          ) : (
-            <><span>↑</span> Upload {files.length > 0 ? `${files.length} file${files.length > 1 ? "s" : ""}` : "Documents"}</>
+              {/* SUBMIT BUTTON */}
+              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setFiles([])}
+                  disabled={uploading}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpload}
+                  disabled={uploading}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Dispatching to Celery...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileUp className="w-4 h-4" />
+                      <span>Dispatch {files.length} Document{files.length > 1 ? "s" : ""}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
           )}
-        </button>
+        </AnimatePresence>
+
+        {/* SPECIFICATION HIGHLIGHTS */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/30">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white mb-1">
+              <Zap className="w-4 h-4 text-indigo-400" />
+              <span>Zero UI Lock</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Files are queued instantly in Redis. HTTP requests return immediately without freezing your browser.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/30">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white mb-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Sanitized Storage</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Path traversal defense, strict file type validation, and automatic temporary file garbage collection.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/30">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white mb-1">
+              <Cpu className="w-4 h-4 text-purple-400" />
+              <span>Distributed Celery</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Multi-worker pool parses text, extracts metadata fields, and broadcasts progress over Redis Pub/Sub.
+            </p>
+          </div>
+        </div>
       </div>
     </Layout>
   );

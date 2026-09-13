@@ -5,8 +5,8 @@ export function useTheme() {
 
   useEffect(() => {
     const saved = localStorage.getItem("docflow-theme") as "light" | "dark" | null;
-    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const initial = saved || preferred;
+    const preferred = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    const initial = saved || preferred || "dark";
     setTheme(initial);
     document.documentElement.setAttribute("data-theme", initial);
   }, []);

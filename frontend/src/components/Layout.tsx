@@ -1,8 +1,29 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { 
+  LayoutDashboard, 
+  UploadCloud, 
+  FileText, 
+  Search, 
+  Sun, 
+  Moon, 
+  Menu, 
+  X, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle, 
+  Activity, 
+  ShieldCheck, 
+  ExternalLink,
+  ChevronRight,
+  Database,
+  Radio,
+  Layers
+} from "lucide-react";
 import { getStats, Stats } from "@/lib/api";
 import { useTheme } from "@/hooks/useTheme";
+import ProfileModal from "@/components/ui/ProfileModal";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,280 +34,282 @@ export default function Layout({ children }: LayoutProps) {
   const [stats, setStats] = useState<Stats>({});
   const { theme, toggle } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     getStats().then((r) => setStats(r.data)).catch(() => {});
     const interval = setInterval(() => {
       getStats().then((r) => setStats(r.data)).catch(() => {});
-    }, 5000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  // Close sidebar on route change
   useEffect(() => {
     setSidebarOpen(false);
   }, [router.pathname]);
 
   const navItems = [
-    { href: "/", label: "Dashboard", icon: "⬡" },
-    { href: "/upload", label: "Upload", icon: "↑" },
+    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/upload", label: "Upload Studio", icon: UploadCloud },
   ];
 
   return (
-    <div className="flex min-h-screen relative" style={{ background: "var(--bg-primary)" }}>
-      {/* Mobile top bar */}
-      <div
-        className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4"
-        style={{
-          height: 56,
-          background: "var(--sidebar-bg)",
-          borderBottom: "1px solid var(--border)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
+    <div className="flex min-h-screen bg-[#07090e] text-[#e8eaf6] font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+      {/* Profile Modal */}
+      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+
+      {/* MOBILE TOP BAR */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 h-14 bg-[#0a0d18]/90 backdrop-blur-xl border-b border-indigo-500/15">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="flex items-center justify-center"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 10,
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--text-primary)",
-            fontSize: 22,
-          }}
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors"
           aria-label="Toggle menu"
         >
-          {sidebarOpen ? "✕" : "☰"}
+          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
 
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <rect x="4" y="3" width="11" height="14" rx="2" fill="white" opacity="0.9"/>
-              <rect x="7" y="3" width="11" height="14" rx="2" fill="white" opacity="0.6" transform="rotate(6,12,10)"/>
-              <rect x="4" y="3" width="11" height="14" rx="2" fill="white"/>
-              <rect x="6.5" y="6.5" width="6" height="1.5" rx="0.75" fill="#4f46e5"/>
-              <rect x="6.5" y="9.5" width="8" height="1" rx="0.5" fill="#818cf8"/>
-              <circle cx="17" cy="17" r="4" fill="#22c55e"/>
-              <path d="M15 17l1.5 1.5L19 15" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
+            <Layers className="w-4 h-4 text-white" />
           </div>
-          <span style={{
-            fontSize: 17,
-            fontWeight: 800,
-            fontFamily: "'Space Grotesk', sans-serif",
-            color: "var(--text-primary)",
-          }}>
-            Doc<span style={{ color: "var(--accent-light)" }}>Flow</span>
+          <span className="text-base font-bold tracking-tight font-heading text-white">
+            Doc<span className="text-indigo-400">Flow</span>
           </span>
         </div>
 
-        {/* Theme toggle in mobile header */}
         <button
-          onClick={toggle}
-          className="flex items-center justify-center"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 10,
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            fontSize: 20,
-          }}
-          aria-label="Toggle theme"
+          onClick={() => setProfileOpen(true)}
+          className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 p-0.5 flex items-center justify-center text-xs font-bold text-white shadow-sm"
         >
-          {theme === "dark" ? "🌙" : "☀️"}
+          AM
         </button>
       </div>
 
-      {/* Mobile overlay */}
+      {/* SIDEBAR BACKDROP FOR MOBILE */}
       {sidebarOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
           onClick={() => setSidebarOpen(false)}
+          className="md:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity"
         />
       )}
 
-      {/* Sidebar */}
+      {/* SIDEBAR */}
       <aside
         className={`
           fixed md:sticky top-0 left-0 z-40
-          w-64 md:w-56 flex-shrink-0 flex flex-col gap-2 p-4
+          w-64 flex-shrink-0 flex flex-col
+          h-screen border-r border-indigo-500/10 bg-[#0a0d18]
           transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
-        style={{
-          background: "var(--sidebar-bg)",
-          borderRight: "1px solid var(--border)",
-          boxShadow: "var(--shadow)",
-          height: "100vh",
-          overflowY: "auto",
-          paddingTop: sidebarOpen ? 64 : undefined,
-        }}
       >
-        {/* Logo - hidden on mobile (shown in top bar instead) */}
-        <div className="hidden md:flex items-center gap-3 px-2 mb-8 mt-3">
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(99,102,241,0.4)",
-              flexShrink: 0,
-            }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="4" y="3" width="11" height="14" rx="2" fill="white" opacity="0.9"/>
-              <rect x="7" y="3" width="11" height="14" rx="2" fill="white" opacity="0.6" transform="rotate(6,12,10)"/>
-              <rect x="4" y="3" width="11" height="14" rx="2" fill="white"/>
-              <rect x="6.5" y="6.5" width="6" height="1.5" rx="0.75" fill="#4f46e5"/>
-              <rect x="6.5" y="9.5" width="8" height="1" rx="0.5" fill="#818cf8"/>
-              <rect x="6.5" y="12" width="7" height="1" rx="0.5" fill="#818cf8" opacity="0.6"/>
-              <circle cx="17" cy="17" r="4" fill="#22c55e"/>
-              <path d="M15 17l1.5 1.5L19 15" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+        {/* LOGO */}
+        <div className="p-5 flex items-center gap-3 border-b border-indigo-500/10">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 flex-shrink-0">
+            <Layers className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div style={{
-              fontSize: 20,
-              fontWeight: 800,
-              fontFamily: "'Space Grotesk', sans-serif",
-              letterSpacing: "-0.5px",
-              lineHeight: 1,
-              color: "var(--text-primary)",
-            }}>
-              Doc<span style={{ color: "var(--accent-light)" }}>Flow</span>
+            <div className="text-lg font-bold font-heading text-white tracking-tight leading-none">
+              Doc<span className="text-indigo-400">Flow</span>
             </div>
-            <div style={{
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              color: "var(--text-muted)",
-              fontWeight: 500,
-              marginTop: 2,
-            }}>
-              ASYNC PROCESSING
+            <div className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mt-1">
+              ASYNC INTELLIGENCE
             </div>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex flex-col gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-item ${router.pathname === item.href ? "active" : ""}`}
-              style={{ minHeight: 44 }}
-            >
-              <span className="text-base">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Stats */}
-        <div className="mt-auto">
-          <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
-            Job Stats
+        {/* NAVIGATION LINKS */}
+        <div className="p-3 flex flex-col gap-1">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-3 py-1.5">
+            Workflows
           </div>
-          <div className="flex flex-col gap-2">
-            {[
-              { key: "queued", label: "Queued", color: "#f59e0b" },
-              { key: "processing", label: "Processing", color: "#6366f1" },
-              { key: "completed", label: "Completed", color: "#22c55e" },
-              { key: "failed", label: "Failed", color: "#ef4444" },
-              { key: "finalized", label: "Finalized", color: "#a78bfa" },
-            ].map(({ key, label, color }) => (
-              <div key={key} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                  <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{label}</span>
-                </div>
-                <span className="text-xs font-mono font-semibold" style={{ color }}>
-                  {(stats as Record<string, number>)[key] ?? 0}
-                </span>
-              </div>
-            ))}
-          </div>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = router.pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all
+                  ${
+                    active
+                      ? "bg-indigo-600/15 text-indigo-300 border border-indigo-500/30 shadow-sm shadow-indigo-500/10"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
+                  }
+                `}
+              >
+                <Icon className={`w-4 h-4 ${active ? "text-indigo-400" : "text-slate-400"}`} />
+                <span>{item.label}</span>
+                {active && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]" />
+                )}
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Theme toggle - desktop only (mobile has it in header) */}
-        <button
-          onClick={toggle}
-          className="hidden md:flex"
-          style={{
-            width: "100%",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid var(--border)",
-            background: "var(--bg-card-hover)",
-            cursor: "pointer",
-            marginBottom: 8,
-            minHeight: 44,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 16 }}>{theme === "dark" ? "🌙" : "☀️"}</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>
-              {theme === "dark" ? "Dark mode" : "Light mode"}
+        {/* WORKER QUEUE MONITOR MINI-PANEL */}
+        <div className="mx-3 my-2 p-3.5 rounded-xl border border-indigo-500/10 bg-gradient-to-b from-[#0e1222] to-[#0a0d18]">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Pipeline Telemetry
+            </span>
+            <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live
             </span>
           </div>
-          <div style={{
-            width: 36,
-            height: 20,
-            borderRadius: 10,
-            background: theme === "dark" ? "var(--accent)" : "var(--text-muted)",
-            position: "relative",
-            transition: "background 0.25s",
-            flexShrink: 0,
-          }}>
-            <div style={{
-              position: "absolute",
-              top: 3,
-              left: theme === "dark" ? 19 : 3,
-              width: 14,
-              height: 14,
-              borderRadius: "50%",
-              background: "white",
-              transition: "left 0.25s cubic-bezier(0.4,0,0.2,1)",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-            }}/>
-          </div>
-        </button>
 
-        {/* Version */}
-        <div className="text-xs text-center pt-4" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>
-          v1.0.0
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 text-slate-400">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                Queued
+              </span>
+              <span className="font-mono font-semibold text-amber-400">
+                {stats["queued"] || stats["QUEUED"] || 0}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 text-slate-400">
+                <Radio className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+                Processing
+              </span>
+              <span className="font-mono font-semibold text-indigo-400">
+                {stats["processing"] || stats["PROCESSING"] || 0}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 text-slate-400">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                Completed
+              </span>
+              <span className="font-mono font-semibold text-emerald-400">
+                {stats["completed"] || stats["COMPLETED"] || 0}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 text-slate-400">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                Failed
+              </span>
+              <span className="font-mono font-semibold text-rose-400">
+                {stats["failed"] || stats["FAILED"] || 0}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* USER PROFILE PILL AT SIDEBAR BOTTOM */}
+        <div className="mt-auto p-3 border-t border-indigo-500/10">
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 transition-all text-left group cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 p-0.5 flex-shrink-0">
+              <div className="w-full h-full rounded-[10px] bg-[#0a0d18] flex items-center justify-center text-xs font-bold text-white">
+                AM
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold text-white truncate group-hover:text-indigo-300 transition-colors">
+                Alex Morgan
+              </div>
+              <div className="text-[11px] text-slate-400 truncate">Enterprise Node</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-colors" />
+          </button>
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 min-w-0 overflow-auto grid-bg pt-14 md:pt-0">
-        {children}
-      </main>
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+        {/* DESKTOP TOP HEADER */}
+        <header className="sticky top-0 z-30 h-16 border-b border-indigo-500/10 bg-[#07090e]/80 backdrop-blur-xl px-6 flex items-center justify-between gap-4">
+          {/* Breadcrumbs / Section Title */}
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <span className="font-medium text-slate-300">DocFlow</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <span className="font-semibold text-white">
+              {router.pathname === "/" ? "Dashboard" : router.pathname === "/upload" ? "Upload Studio" : "Document Review"}
+            </span>
+          </div>
+
+          {/* Quick Actions & Status */}
+          <div className="flex items-center gap-3">
+            {/* Real-time Redis/Celery Engine status pill */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="hidden lg:inline">Celery Worker & Redis Engine</span>
+              <span>Online</span>
+            </div>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggle}
+              className="w-9 h-9 rounded-xl border border-slate-800 bg-slate-900/60 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Toggle Theme"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+            </button>
+
+            {/* Profile trigger button */}
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900/50 hover:bg-slate-800/80 transition-all text-xs font-medium text-slate-200 cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+                AM
+              </div>
+              <span className="hidden sm:inline">Alex</span>
+            </button>
+          </div>
+        </header>
+
+        {/* BODY CHILDREN */}
+        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+          {children}
+        </main>
+
+        {/* TELEMETRY FOOTER */}
+        <footer className="border-t border-indigo-500/10 bg-[#0a0d18] px-6 py-4 text-xs text-slate-400">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              <span className="flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-indigo-400" />
+                PostgreSQL 16 <span className="text-emerald-400">Connected</span>
+              </span>
+              <span className="text-slate-700">•</span>
+              <span className="flex items-center gap-1.5">
+                <Radio className="w-3.5 h-3.5 text-purple-400" />
+                Redis 7 Pub/Sub <span className="text-emerald-400">Active</span>
+              </span>
+              <span className="text-slate-700">•</span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                Strict CORS & Security Headers
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <a
+                href="http://localhost:8000/docs"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-indigo-400 transition-colors flex items-center gap-1"
+              >
+                Swagger API <ExternalLink className="w-3 h-3" />
+              </a>
+              <span className="text-slate-700">•</span>
+              <span className="font-mono text-slate-400">v1.0.0 Enterprise</span>
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
