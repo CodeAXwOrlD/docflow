@@ -1,4 +1,4 @@
-.PHONY: up down build logs backend-shell worker-shell test lint
+.PHONY: up up-d down down-v logs logs-worker backend-shell worker-shell db-shell redis-cli install-backend install-frontend dev-backend dev-worker dev-frontend migrate test test-cov lint-frontend build-frontend test-all clean-uploads flower
 
 # ─── Docker ───────────────────────────────────────────────────────────────────
 up:
@@ -48,12 +48,23 @@ dev-worker:
 dev-frontend:
 	cd frontend && npm run dev
 
-# ─── Tests ────────────────────────────────────────────────────────────────────
+migrate:
+	cd backend && alembic upgrade head
+
+# ─── Tests & Lint ─────────────────────────────────────────────────────────────
 test:
 	cd backend && pytest tests/ -v
 
 test-cov:
 	cd backend && pytest tests/ -v --cov=app --cov-report=term-missing
+
+lint-frontend:
+	cd frontend && npm run lint
+
+build-frontend:
+	cd frontend && npm run build
+
+test-all: test lint-frontend build-frontend
 
 # ─── Misc ─────────────────────────────────────────────────────────────────────
 clean-uploads:

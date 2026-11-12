@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Running database migrations..."
+alembic upgrade head || echo "Database migration skipped or already up to date"
+
 echo "Starting Celery worker in background..."
 celery -A app.workers.celery_app worker \
   --loglevel=info \

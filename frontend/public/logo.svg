@@ -1,36 +1,117 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
   <defs>
-    <linearGradient id="df-grad-primary" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00f2fe" />
-      <stop offset="100%" stop-color="#0ea5e9" />
+    <!-- Iridescent Cyan & Sky Gradient -->
+    <linearGradient id="df-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="40%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#0284c7" />
     </linearGradient>
-    <linearGradient id="df-grad-accent" x1="0%" y1="100%" x2="100%" y2="0%">
+
+    <!-- Emerald Mint Flow Gradient -->
+    <linearGradient id="df-mint" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#10b981" />
+      <stop offset="60%" stop-color="#14b8a6" />
       <stop offset="100%" stop-color="#06b6d4" />
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="3" result="blur" />
+
+    <!-- Frosted Glass Gradient -->
+    <linearGradient id="df-glass" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.10" />
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.05" />
+    </linearGradient>
+
+    <!-- Glass Specular Reflection -->
+    <linearGradient id="df-specular" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7" />
+      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Ambient Glow Filter -->
+    <filter id="glow-ambient" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="glass-blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
     </filter>
   </defs>
 
-  <!-- Background container tile -->
-  <rect x="2" y="2" width="60" height="60" rx="16" fill="#090d1a" stroke="#0ea5e9" stroke-opacity="0.3" stroke-width="1.5" />
+  <!-- Ambient background glow behind emblem -->
+  <circle cx="60" cy="60" r="42" fill="#06b6d4" fill-opacity="0.18" filter="url(#glow-ambient)" />
 
-  <!-- Back Layer Document (Subtle depth) -->
-  <rect x="20" y="10" width="28" height="38" rx="6" fill="#0ea5e9" fill-opacity="0.18" stroke="#0ea5e9" stroke-opacity="0.4" stroke-width="1.2" transform="rotate(7, 34, 29)" />
+  <!-- Base Backing Tile: Deep Translucent Glass Shield -->
+  <rect x="10" y="10" width="100" height="100" rx="28" fill="#070d1d" fill-opacity="0.85" stroke="url(#df-primary)" stroke-opacity="0.25" stroke-width="1.5" />
+  <rect x="10" y="10" width="100" height="100" rx="28" fill="url(#df-glass)" stroke="url(#df-specular)" stroke-width="1" />
 
-  <!-- Main Front Document -->
-  <rect x="14" y="14" width="30" height="40" rx="7" fill="url(#df-grad-primary)" filter="url(#glow)" />
-  <rect x="14" y="14" width="30" height="40" rx="7" fill="#080e1e" fill-opacity="0.88" />
-  <rect x="14" y="14" width="30" height="40" rx="7" stroke="url(#df-grad-primary)" stroke-width="1.8" />
+  <!-- FLOW PRISM LAYER 1: The Back Dynamic Stream Arc -->
+  <path
+    d="M 38 28
+       C 68 24, 88 42, 88 64
+       C 88 84, 70 92, 54 92
+       C 40 92, 34 82, 34 72
+       L 34 38
+       C 34 32, 36 29, 38 28 Z"
+    fill="url(#df-mint)"
+    fill-opacity="0.22"
+    stroke="url(#df-mint)"
+    stroke-opacity="0.4"
+    stroke-width="1.5"
+  />
 
-  <!-- Flow Lines inside document -->
-  <rect x="20" y="23" width="14" height="2.5" rx="1.25" fill="#00f2fe" />
-  <rect x="20" y="29" width="18" height="2.5" rx="1.25" fill="#38bdf8" />
-  <rect x="20" y="35" width="12" height="2.5" rx="1.25" fill="#38bdf8" fill-opacity="0.6" />
+  <!-- FLOW PRISM LAYER 2: Main Outer Precision Ribbon 'D' -->
+  <path
+    d="M 34 32
+       C 34 27.5786, 37.5786 24, 42 24
+       L 62 24
+       C 78.5685 24, 92 37.4315, 92 54
+       C 92 70.5685, 78.5685 84, 62 84
+       L 42 84
+       C 37.5786 84, 34 80.4214, 34 76
+       Z"
+    fill="#081024"
+    fill-opacity="0.85"
+    stroke="url(#df-primary)"
+    stroke-width="2.5"
+    filter="url(#glow-ambient)"
+  />
 
-  <!-- Dynamic Async Speed Particle / Arrow (Signifying Async Flow) -->
-  <circle cx="42" cy="42" r="11" fill="#090d1a" stroke="url(#df-grad-accent)" stroke-width="2" />
-  <path d="M37 42.5L41 46.5L47 38.5" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Specular Rim highlight on top edge of 'D' -->
+  <path
+    d="M 36 25 L 62 25 C 76 25, 87 35, 90 50"
+    stroke="url(#df-specular)"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+
+  <!-- FLOW PRISM LAYER 3: Inner Fluid Wave 'F' Stream -->
+  <path
+    d="M 48 38
+       L 72 38
+       C 76.4183 38, 80 41.5817, 80 46
+       C 80 50.4183, 76.4183 54, 72 54
+       L 48 54
+       L 48 70
+       C 48 73.3137, 45.3137 76, 42 76
+       C 38.6863 76, 36 73.3137, 36 70
+       L 36 44
+       C 36 40.6863, 38.6863 38, 42 38
+       L 48 38 Z"
+    fill="url(#df-primary)"
+  />
+
+  <!-- Mid Flow Jet (Async Pipeline Node Pulse) -->
+  <path
+    d="M 48 54 L 66 54 C 68.2091 54, 70 55.7909, 70 58 C 70 60.2091, 68.2091 62, 66 62 L 48 62 Z"
+    fill="url(#df-mint)"
+  />
+
+  <!-- Kinetic Data Pulse Orbs (Async Velocity) -->
+  <circle cx="78" cy="54" r="5" fill="#10b981" filter="url(#glow-ambient)" />
+  <circle cx="78" cy="54" r="2.5" fill="#ffffff" />
+
+  <circle cx="88" cy="68" r="3" fill="#38bdf8" />
+  <circle cx="68" cy="76" r="2.5" fill="#06b6d4" />
 </svg>

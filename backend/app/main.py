@@ -1,33 +1,33 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.database import engine, Base
+
+from app.core.config import settings
+from app.core.database import Base, engine
 from app.api.routes import router
-from app.models import document  # noqa: ensure model is imported for Base metadata
+from app.api.auth_routes import router as auth_router
+from app.api.ai_routes import router as ai_router
+from app.models import ai, document, user  # noqa: ensure models are registered in Base.metadata
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create DB tables on startup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    os.makedirs(os.getenv("UPLOAD_DIR", "./uploads"), exist_ok=True)
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     yield
     await engine.dispose()
 
 
-from app.core.config import settings
-from fastapi import Request
-
 app = FastAPI(
     title="DocFlow API",
-    description="Async Document Processing Workflow System",
-    version="1.0.0",
+    description="Async AI Document Intelligence & BYOK Workflow System",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
-# Security Headers Middleware
+
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -37,6 +37,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -45,6 +46,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+app.include_router(ai_router)
 app.include_router(router)
 
 

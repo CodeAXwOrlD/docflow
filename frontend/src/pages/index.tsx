@@ -1,515 +1,296 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { motion, AnimatePresence } from "framer-motion";
-import toast from "react-hot-toast";
-import Layout from "@/components/Layout";
-import StatusBadge from "@/components/ui/StatusBadge";
-import ProgressBar from "@/components/ui/ProgressBar";
-import DeleteModal from "@/components/ui/DeleteModal";
+import Image from "next/image";
 import { 
-  listDocuments, 
-  retryDocument, 
-  deleteDocument, 
-  Document, 
-  DocumentListResponse, 
-  formatFileSize 
-} from "@/lib/api";
-import { formatDistanceToNow } from "date-fns";
-import { 
-  Search, 
-  UploadCloud, 
-  FileText, 
-  FileSpreadsheet, 
-  FileCode, 
+  ArrowRight, 
+  Sparkles, 
   Layers, 
-  Radio, 
-  CheckCircle2, 
-  Zap, 
-  RotateCcw, 
-  Trash2, 
-  ExternalLink, 
-  Filter, 
-  ArrowUpDown, 
-  ChevronLeft, 
-  ChevronRight,
-  Sparkles,
-  Clock,
-  Eye,
-  Activity
+  Cpu, 
+  ShieldCheck, 
+  Terminal, 
+  ExternalLink,
+  Github,
+  CheckCircle2,
+  UploadCloud,
+  FileCode2,
+  Workflow
 } from "lucide-react";
+import IntroReveal from "@/components/motion/IntroReveal";
+import useLenis from "@/components/motion/LenisProvider";
+import HeroDocumentCard from "@/components/landing/HeroDocumentCard";
+import HowItWorksStory from "@/components/landing/HowItWorksStory";
+import { getAppMode, setAppMode, getBackendHealth, AppMode, BackendHealth, subscribeModeChange, subscribeHealthChange } from "@/lib/api";
 
-const getFileIcon = (type: string) => {
-  const t = (type || "").toLowerCase();
-  if (t === ".csv" || t === ".xlsx") return <FileSpreadsheet className="w-4 h-4 text-emerald-400" />;
-  if (t === ".json") return <FileCode className="w-4 h-4 text-amber-400" />;
-  return <FileText className="w-4 h-4 text-indigo-400" />;
-};
+export default function LandingPage() {
+  // Initialize Lenis smooth scroll on landing page only
+  useLenis();
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [data, setData] = useState<DocumentListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [sortBy, setSortBy] = useState("created_at");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [page, setPage] = useState(1);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  // Delete modal state
-  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [mode, setMode] = useState<AppMode>("demo");
+  const [health, setHealth] = useState<BackendHealth>("checking");
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(t);
-  }, [search]);
+    setMode(getAppMode());
+    setHealth(getBackendHealth());
 
-  const fetchDocs = useCallback(async () => {
-    try {
-      const res = await listDocuments({
-        page,
-        page_size: 15,
-        status: status || undefined,
-        search: debouncedSearch || undefined,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      });
-      setData(res.data);
-    } catch {
-      toast.error("Failed to fetch documents");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, status, debouncedSearch, sortBy, sortOrder]);
+    const unsubMode = subscribeModeChange((m) => setMode(m));
+    const unsubHealth = subscribeHealthChange((h) => setHealth(h));
 
-  useEffect(() => {
-    fetchDocs();
-    const interval = setInterval(fetchDocs, 3500);
-    return () => clearInterval(interval);
-  }, [fetchDocs]);
-
-  const handleRetry = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    try {
-      await retryDocument(id);
-      toast.success("Document requeued for processing!");
-      fetchDocs();
-    } catch {
-      toast.error("Retry failed");
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    setIsDeleting(true);
-    try {
-      await deleteDocument(deleteTarget.id);
-      toast.success(`"${deleteTarget.original_filename}" deleted successfully`);
-      setDeleteTarget(null);
-      fetchDocs();
-    } catch {
-      toast.error("Deletion failed");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const totalPages = data ? Math.ceil(data.total / 15) : 1;
-  const totalDocs = data?.total || 0;
-
-  // Calculate active in-flight count from current items
-  const inFlightCount = data?.items.filter(
-    (d) => d.status === "processing" || d.status === "queued"
-  ).length || 0;
-  const completedCount = data?.items.filter(
-    (d) => d.status === "completed" || d.status === "finalized"
-  ).length || 0;
-  const successRate = totalDocs > 0 ? Math.round((completedCount / Math.max(1, data?.items.length || 1)) * 100) : 100;
+    return () => {
+      unsubMode();
+      unsubHealth();
+    };
+  }, []);
 
   return (
-    <Layout>
-      {/* Delete Confirmation Modal */}
-      <DeleteModal
-        isOpen={!!deleteTarget}
-        onClose={() => !isDeleting && setDeleteTarget(null)}
-        onConfirm={handleConfirmDelete}
-        itemName={deleteTarget?.original_filename}
-        itemMeta={deleteTarget ? `${deleteTarget.file_type.toUpperCase()} • ${formatFileSize(deleteTarget.file_size)} • ID: ${deleteTarget.id.slice(0, 8)}...` : ""}
-        isDeleting={isDeleting}
-      />
+    <div className="min-h-screen bg-[#050814] text-[#f1f5f9] font-sans antialiased selection:bg-teal-500/30 selection:text-teal-200 overflow-x-hidden">
+      <Head>
+        <title>DocFlow — Enterprise Async Document Intelligence & Workflow</title>
+        <meta
+          name="description"
+          content="Production-grade asynchronous document workflow engine. Transform unstructured PDFs, invoices, and scans into typed, verified JSON schemas with Celery, FastAPI, and human-in-the-loop review."
+        />
+      </Head>
 
-      <div className="space-y-6">
-        {/* DASHBOARD HERO HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-heading">
-                Pipeline Control Room
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
-                ASYNC
+      {/* Session-guarded skippable intro */}
+      <IntroReveal />
+
+      {/* Subtle single ambient background gradient */}
+      <div className="pointer-events-none fixed top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-teal-950/20 via-slate-950/10 to-transparent z-0" />
+
+      {/* NAVIGATION BAR */}
+      <header className="relative z-30 border-b border-white/[0.07] bg-[#050814]/80 backdrop-blur-xl sticky top-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3 group">
+            <Image
+              src="/logo.svg"
+              alt="DocFlow Logo"
+              width={28}
+              height={28}
+              className="w-7 h-7 opacity-95 group-hover:scale-105 transition-transform"
+            />
+            <span className="text-base font-semibold tracking-tight font-heading text-white">
+              Doc<span className="text-teal-400">Flow</span>
+            </span>
+          </Link>
+
+          {/* Nav Links */}
+          <nav className="hidden md:flex items-center gap-6 text-xs text-stone-400 font-medium">
+            <a href="#how-it-works" className="hover:text-white transition-colors">
+              How It Works
+            </a>
+            <a href="#architecture" className="hover:text-white transition-colors">
+              Architecture
+            </a>
+            <Link href="/documents" className="hover:text-white transition-colors">
+              Workspace
+            </Link>
+          </nav>
+
+          {/* Action CTAs & Mode Indicator */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-900/80 border border-white/10 text-[11px] font-mono">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  mode === "demo" ? "bg-cyan-400" : health === "healthy" ? "bg-emerald-400" : "bg-amber-400 animate-pulse"
+                }`}
+              />
+              <span className="text-stone-300">
+                {mode === "demo" ? "Demo Mode" : health === "healthy" ? "Live Connected" : "Render Waking"}
               </span>
             </div>
-            <p className="text-sm text-slate-400">
-              Real-time document ingestion, distributed parsing, and structured schema extraction.
-            </p>
+
+            <Link
+              href="/documents"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-stone-900 hover:bg-stone-200 transition-all shadow-sm"
+            >
+              Launch App
+            </Link>
           </div>
+        </div>
+      </header>
+
+      {/* HERO SECTION */}
+      <section className="relative z-10 pt-16 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
+        {/* Category Pill */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-xs font-mono mb-6">
+          <Workflow className="w-3.5 h-3.5" />
+          <span>PRODUCTION-GRADE DOCUMENT EXTRACTION PIPELINE</span>
+        </div>
+
+        {/* Hero Title */}
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white font-heading max-w-4xl mx-auto leading-[1.12]">
+          From Unstructured Documents into Verified Schema in Milliseconds.
+        </h1>
+
+        {/* Subtitle */}
+        <p className="mt-5 text-sm sm:text-base text-stone-400 max-w-2xl mx-auto leading-relaxed">
+          Celery-driven asynchronous queue, neural OCR extraction, real-time Server-Sent Events, 
+          and human-in-the-loop validation. Zero-cost deployment engineered for 100% portfolio reliability.
+        </p>
+
+        {/* Action Buttons */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/documents"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500 text-stone-950 font-semibold text-xs hover:bg-teal-400 transition-all shadow-lg shadow-teal-500/20 cursor-pointer"
+          >
+            <span>Open Document Workspace</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
 
           <Link
             href="/upload"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/10 text-xs font-medium transition-colors"
           >
-            <UploadCloud className="w-4 h-4" />
-            <span>Upload Documents</span>
+            <UploadCloud className="w-3.5 h-3.5 text-stone-400" />
+            <span>Upload Sample Document</span>
           </Link>
+
+          <a
+            href="https://github.com/CodeAXwOrlD/docflow"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/[0.04] text-stone-400 hover:text-white border border-white/5 text-xs font-mono transition-colors"
+          >
+            <Github className="w-3.5 h-3.5" />
+            <span>GitHub Repository</span>
+          </a>
         </div>
 
-        {/* 4 BENTO METRIC CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Bento Card 1: Total Docs */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.05 }}
-            className="p-5 rounded-2xl border border-indigo-500/15 bg-[#0e1222]/80 backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/30 transition-all"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Total Documents
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                <Layers className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold font-heading text-white tracking-tight">
-              {totalDocs}
-            </div>
-            <div className="flex items-center gap-1.5 mt-2 text-xs text-emerald-400 font-medium">
-              <span>All formats cataloged</span>
-            </div>
-          </motion.div>
+        {/* Interactive Tilt Hero Document Card */}
+        <div className="mt-8">
+          <HeroDocumentCard />
+        </div>
+      </section>
 
-          {/* Bento Card 2: In-Flight */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="p-5 rounded-2xl border border-indigo-500/15 bg-[#0e1222]/80 backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/30 transition-all"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                In-Flight Queue
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <Radio className="w-4 h-4 animate-pulse" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold font-heading text-white tracking-tight">
-              {inFlightCount}
-            </div>
-            <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Celery workers polling</span>
-            </div>
-          </motion.div>
+      {/* HOW IT WORKS / 3D SPATIAL STORY PINNED SECTION */}
+      <section id="how-it-works">
+        <HowItWorksStory />
+      </section>
 
-          {/* Bento Card 3: Success Rate */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.15 }}
-            className="p-5 rounded-2xl border border-indigo-500/15 bg-[#0e1222]/80 backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/30 transition-all"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Completion Rate
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold font-heading text-white tracking-tight">
-              {totalDocs > 0 ? `${successRate}%` : "100%"}
-            </div>
-            <div className="flex items-center gap-1.5 mt-2 text-xs text-emerald-400">
-              <span>Zero dropped frames</span>
-            </div>
-          </motion.div>
-
-          {/* Bento Card 4: Architecture Throughput */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            className="p-5 rounded-2xl border border-indigo-500/15 bg-[#0e1222]/80 backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/30 transition-all"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Worker Engine
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                <Zap className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold font-heading text-white tracking-tight">
-              &lt;0.9s
-            </div>
-            <div className="flex items-center gap-1.5 mt-2 text-xs text-purple-400">
-              <Sparkles className="w-3 h-3" />
-              <span>Pool caching active</span>
-            </div>
-          </motion.div>
+      {/* ARCHITECTURAL SPECIFICATIONS SECTION */}
+      <section id="architecture" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/[0.07]">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="text-xs font-mono text-teal-400 uppercase tracking-wider mb-2">
+            Engineering & Infrastructure
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-heading">
+            Built Like Core Financial Infrastructure
+          </h2>
+          <p className="text-xs sm:text-sm text-stone-400 mt-2">
+            Every layer from worker queues to browser review was architected for auditability and resilience.
+          </p>
         </div>
 
-        {/* DOCUMENT EXPLORER BENTO SECTION */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.25 }}
-          className="rounded-2xl border border-indigo-500/15 bg-[#0b0e1b] shadow-xl overflow-hidden"
-        >
-          {/* SEARCH & FILTER CONTROLS */}
-          <div className="p-4 sm:p-5 border-b border-indigo-500/10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Search documents by filename or extension..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#121629] border border-slate-800 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1 */}
+          <div className="surface-card p-5 space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+              <Layers className="w-4 h-4" />
             </div>
-
-            {/* Status Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-              {[
-                { label: "All", val: "" },
-                { label: "Queued", val: "queued" },
-                { label: "Processing", val: "processing" },
-                { label: "Completed", val: "completed" },
-                { label: "Failed", val: "failed" },
-              ].map((tab) => (
-                <button
-                  key={tab.val}
-                  onClick={() => {
-                    setStatus(tab.val);
-                    setPage(1);
-                  }}
-                  className={`
-                    px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all cursor-pointer
-                    ${
-                      status === tab.val
-                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                        : "bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800/80"
-                    }
-                  `}
-                >
-                  {tab.label}
-                </button>
-              ))}
-
-              {/* Sort selector */}
-              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-800">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-lg bg-[#121629] border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                >
-                  <option value="created_at">Date</option>
-                  <option value="original_filename">Name</option>
-                  <option value="file_size">Size</option>
-                </select>
-
-                <button
-                  onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-                  className="p-1.5 rounded-lg border border-slate-800 bg-[#121629] text-slate-300 hover:text-white transition-colors cursor-pointer"
-                  title="Toggle Sort Direction"
-                >
-                  <ArrowUpDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            <h3 className="text-sm font-semibold text-white font-heading">
+              Asynchronous Celery Pipeline
+            </h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Decoupled worker queues run via Redis. Document ingestion immediately yields task IDs with exponential backoff retry mechanics.
+            </p>
           </div>
 
-          {/* TABLE CONTAINER */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800/80 bg-[#0e1224]/60 text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                  <th className="py-3 px-4 sm:px-6">Document</th>
-                  <th className="py-3 px-4">Size</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Progress / Stage</th>
-                  <th className="py-3 px-4">Ingested</th>
-                  <th className="py-3 px-4 sm:px-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50 text-sm">
-                {loading && !data ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-                        <span>Synchronizing documents with PostgreSQL...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : data?.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <div className="max-w-sm mx-auto flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3">
-                          <FileText className="w-6 h-6" />
-                        </div>
-                        <h4 className="text-base font-bold text-white mb-1">No documents found</h4>
-                        <p className="text-xs text-slate-400 mb-4">
-                          {search || status ? "Try adjusting your search or filters." : "Upload your first PDF, Word, or Excel document to begin processing."}
-                        </p>
-                        <Link
-                          href="/upload"
-                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all"
-                        >
-                          Upload First Document
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  data?.items.map((doc) => {
-                    const isProcessing = doc.status === "processing";
-                    return (
-                      <tr
-                        key={doc.id}
-                        onClick={() => router.push(`/documents/${doc.id}`)}
-                        className="group hover:bg-[#12162d]/60 transition-colors cursor-pointer"
-                      >
-                        {/* Document Name */}
-                        <td className="py-3.5 px-4 sm:px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center flex-shrink-0 group-hover:border-indigo-500/30 transition-colors">
-                              {getFileIcon(doc.file_type)}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-white truncate max-w-xs sm:max-w-sm group-hover:text-indigo-300 transition-colors">
-                                {doc.original_filename}
-                              </div>
-                              <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                                {doc.id.slice(0, 8)} • {doc.file_type.toUpperCase()}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* File Size */}
-                        <td className="py-3.5 px-4 text-xs font-mono text-slate-400">
-                          {formatFileSize(doc.file_size)}
-                        </td>
-
-                        {/* Status Badge */}
-                        <td className="py-3.5 px-4">
-                          <StatusBadge status={doc.status} size="sm" />
-                        </td>
-
-                        {/* Stage Progress */}
-                        <td className="py-3.5 px-4">
-                          <div className="w-36">
-                            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                              <span className="truncate max-w-[100px] capitalize">
-                                {doc.current_stage ? doc.current_stage.replace(/_/g, " ") : doc.status}
-                              </span>
-                              <span className="font-mono">{doc.progress}%</span>
-                            </div>
-                            <ProgressBar
-                              progress={doc.progress}
-                              status={doc.status}
-                              size="sm"
-                            />
-                          </div>
-                        </td>
-
-                        {/* Created At */}
-                        <td className="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">
-                          {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3.5 px-4 sm:px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
-                            {/* View details */}
-                            <Link
-                              href={`/documents/${doc.id}`}
-                              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                              title="Inspect Extracted Data"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Link>
-
-                            {/* Retry button */}
-                            {doc.status === "failed" && (
-                              <button
-                                onClick={(e) => handleRetry(e, doc.id)}
-                                className="p-2 rounded-lg text-amber-400 hover:bg-amber-500/15 transition-colors cursor-pointer"
-                                title="Retry Processing"
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                              </button>
-                            )}
-
-                            {/* Delete button triggering DeleteModal */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteTarget(doc);
-                              }}
-                              className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                              title="Delete Document"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+          {/* Card 2 */}
+          <div className="surface-card p-5 space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <Cpu className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-semibold text-white font-heading">
+              Server-Sent Events (SSE)
+            </h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Real-time push status streaming via `/stream` endpoint. Granular stage progress updates without chatty HTTP polling.
+            </p>
           </div>
 
-          {/* PAGINATION FOOTER */}
-          {data && data.total > 15 && (
-            <div className="p-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <div>
-                Showing Page <span className="font-semibold text-white">{page}</span> of{" "}
-                <span className="font-semibold text-white">{totalPages}</span> ({data.total} total)
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" /> Previous
-                </button>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1"
-                >
-                  Next <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
+          {/* Card 3 */}
+          <div className="surface-card p-5 space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <ShieldCheck className="w-4 h-4" />
             </div>
-          )}
-        </motion.div>
-      </div>
-    </Layout>
+            <h3 className="text-sm font-semibold text-white font-heading">
+              Human-in-the-Loop Review
+            </h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Interactive schema editor with confidence thresholds. Color-coded low-confidence flags and JSON / CSV batch export.
+            </p>
+          </div>
+
+          {/* Card 4 */}
+          <div className="surface-card p-5 space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <FileCode2 className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-semibold text-white font-heading">
+              Zero-Cost Portfolio Mode
+            </h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Resilient client-side state machine ensures demo documents, review workflows, and simulations remain 100% accessible even when live backend is sleeping.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CALL TO ACTION BANNER */}
+      <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+        <div className="p-8 sm:p-10 rounded-2xl bg-gradient-to-r from-teal-950/40 via-stone-900/60 to-cyan-950/40 border border-teal-500/30 text-center space-y-4">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-heading">
+            Ready to explore the DocFlow workspace?
+          </h2>
+          <p className="text-xs sm:text-sm text-stone-400 max-w-xl mx-auto">
+            Test the live demo documents, inspect parsed JSON schemas, or upload custom invoices.
+          </p>
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/documents"
+              className="px-5 py-2.5 rounded-xl bg-white text-stone-900 font-semibold text-xs hover:bg-stone-200 transition-colors shadow-md"
+            >
+              Open Documents Dashboard →
+            </Link>
+            <Link
+              href="/upload"
+              className="px-4 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/10 text-xs font-medium transition-colors"
+            >
+              Upload Document
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="relative z-10 border-t border-white/[0.07] py-8 px-4 sm:px-6 lg:px-8 text-xs text-stone-500">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 font-mono text-[11px]">
+            <span>DocFlow v1.0.0</span>
+            <span>·</span>
+            <span>FastAPI + Celery + Next.js 14</span>
+          </div>
+
+          <div className="flex items-center gap-6 text-[11px]">
+            <Link href="/documents" className="hover:text-stone-300 transition-colors">
+              Workspace
+            </Link>
+            <Link href="/upload" className="hover:text-stone-300 transition-colors">
+              Upload
+            </Link>
+            <a
+              href="https://github.com/CodeAXwOrlD/docflow"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-stone-300 transition-colors"
+            >
+              Source Code
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

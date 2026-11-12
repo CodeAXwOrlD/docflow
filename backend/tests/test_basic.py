@@ -2,25 +2,44 @@
 Basic tests for DocFlow backend.
 Run with: pytest tests/ -v
 """
+import io
 import pytest
-import asyncio
 from httpx import AsyncClient, ASGITransport
-from unittest.mock import patch, MagicMock
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+from unittest.mock import patch, MagicMock, AsyncMock
+from app.models.user import User
 
 
 @pytest.fixture
-async def client():
-    """Create test client with mocked DB and Redis."""
+def mock_user():
+    return User(
+        id="user-test-1",
+        email="tester@docflow.dev",
+        full_name="Test User",
+        hashed_password="x",
+        is_active=True,
+    )
+
+
+@pytest.fixture
+async def client(mock_user):
+    """Create authenticated test client with mocked DB/user."""
     from app.main import app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        yield c
+    from app.core.security import get_current_user
+    from app.core.database import get_db
+
+    async def override_user():
+        return mock_user
+
+    async def override_db():
+        yield AsyncMock()
+
+    app.dependency_overrides[get_current_user] = override_user
+    app.dependency_overrides[get_db] = override_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
@@ -45,17 +64,18 @@ async def test_list_documents_empty(client):
 @pytest.mark.asyncio
 async def test_upload_invalid_extension(client):
     """Uploading a disallowed file type should return 400."""
-    import io
     fake_file = io.BytesIO(b"fake exe content")
-    response = await client.post(
-        "/api/v1/upload",
-        files={"files": ("malicious.exe", fake_file, "application/octet-stream")},
-    )
-    assert response.status_code in (400, 422, 500)
+    with patch("app.api.routes.ai_connection_service.get_effective_connection", return_value=None):
+        response = await client.post(
+            "/api/v1/upload",
+            files={"files": ("malicious.exe", fake_file, "application/octet-stream")},
+        )
+    assert response.status_code == 400
+    assert "not permitted" in response.json()["detail"]
 
 
 def test_generate_structured_output():
-    """Unit test the extraction logic."""
+    """Unit test the fallback extraction helper."""
     from app.workers.celery_app import _generate_structured_output
     result = _generate_structured_output(
         text="Invoice total payment amount due services rendered",

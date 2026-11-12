@@ -38,6 +38,10 @@ services:
       SYNC_DATABASE_URL: postgresql://docflow:docflow_secret@postgres:5432/docflow_db
       REDIS_URL: redis://redis:6379/0
       UPLOAD_DIR: /app/uploads
+      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+      ENVIRONMENT: "development"
+      SECRET_KEY: "${SECRET_KEY:-docflow-super-secret-key-change-in-production}"
+      ENCRYPTION_MASTER_KEY: "${ENCRYPTION_MASTER_KEY:-}"
     volumes:
       - ./backend:/app
       - uploads_data:/app/uploads
@@ -46,7 +50,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: bash -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   celery_worker:
     build:
@@ -57,6 +61,9 @@ services:
       SYNC_DATABASE_URL: postgresql://docflow:docflow_secret@postgres:5432/docflow_db
       REDIS_URL: redis://redis:6379/0
       UPLOAD_DIR: /app/uploads
+      ENVIRONMENT: "development"
+      SECRET_KEY: "${SECRET_KEY:-docflow-super-secret-key-change-in-production}"
+      ENCRYPTION_MASTER_KEY: "${ENCRYPTION_MASTER_KEY:-}"
     volumes:
       - ./backend:/app
       - uploads_data:/app/uploads
@@ -88,6 +95,7 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_DEMO_MODE: "false"
     volumes:
       - ./frontend:/app
       - /app/node_modules

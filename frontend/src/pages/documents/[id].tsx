@@ -1,169 +1,161 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import Head from "next/head";
 import toast from "react-hot-toast";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/ui/StatusBadge";
-import ProgressBar from "@/components/ui/ProgressBar";
 import DeleteModal from "@/components/ui/DeleteModal";
+import StageTracker from "@/components/ui/StageTracker";
+import SchemaInspector from "@/components/ui/SchemaInspector";
 import {
-  getDocument, 
-  updateReview, 
-  finalizeDocument, 
+  getDocument,
+  updateReview,
+  finalizeDocument,
   retryDocument,
+  reprocessDocument,
   deleteDocument,
-  exportDocument, 
-  getSSEUrl,
-  Document, 
-  ProgressEvent, 
+  exportDocument,
+  subscribeToProgress,
+  Document,
+  ProgressEvent,
   formatFileSize,
+  getAppMode,
 } from "@/lib/api";
+import { AIConnection } from "@/types/document";
+import { getStoredUser } from "@/lib/auth";
+import { liveDocumentService } from "@/services/liveDocumentService";
 import { formatDistanceToNow, format } from "date-fns";
-import { 
-  ArrowLeft, 
-  Download, 
-  RotateCcw, 
-  CheckCircle2, 
-  Trash2, 
-  Sparkles, 
-  Edit3, 
-  Save, 
-  X, 
-  FileText, 
-  FileSpreadsheet, 
-  FileCode, 
-  Activity, 
-  Check, 
-  Clock, 
-  Calendar, 
-  Cpu,
-  Layers,
+import {
+  ArrowLeft,
+  Download,
+  RotateCcw,
+  Trash2,
+  Sparkles,
+  FileText,
+  Clock,
   AlertTriangle,
-  Bot
+  CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
-
-const STAGE_ORDER = [
-  "job_started", 
-  "document_received", 
-  "document_parsing_started",
-  "document_parsing_completed", 
-  "field_extraction_started",
-  "field_extraction_completed", 
-  "storing_result", 
-  "job_completed",
-];
-
-const STAGE_LABELS: Record<string, string> = {
-  job_started: "Job Picked Up by Worker",
-  document_received: "Document Validated & Ingested",
-  document_parsing_started: "Parsing Document Structure",
-  document_parsing_completed: "Text Content Extracted",
-  field_extraction_started: "Structured Field Extraction",
-  field_extraction_completed: "Schema Normalization Complete",
-  storing_result: "Saving to PostgreSQL & Cache",
-  job_completed: "Processing Succeeded",
-  job_failed: "Pipeline Execution Failed",
-};
 
 export default function DocumentDetailPage() {
   const router = useRouter();
   const { id } = router.query as { id: string };
   const [doc, setDoc] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<ProgressEvent[]>([]);
-  const [editing, setEditing] = useState(false);
-  const [editData, setEditData] = useState<Record<string, unknown>>({});
-  const [saving, setSaving] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const sseRef = useRef<EventSource | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [connections, setConnections] = useState<AIConnection[]>([]);
+  const [reprocessConnId, setReprocessConnId] = useState<string>("");
 
-  const fetchDoc = async () => {
+  const fetchDoc = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await getDocument(id);
-      setDoc(res.data);
-      const d = res.data.reviewed_data || res.data.extracted_data;
-      if (d) setEditData(d as Record<string, unknown>);
+      const data = await getDocument(id);
+      setDoc(data);
+      setNotFound(false);
     } catch {
-      toast.error("Document not found");
-      router.push("/");
+      setNotFound(true);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (!id) return;
-    fetchDoc();
-
-    const connectSSE = () => {
-      if (sseRef.current) sseRef.current.close();
-      const es = new EventSource(getSSEUrl(id));
-      sseRef.current = es;
-      es.onmessage = (e) => {
-        try {
-          const event: ProgressEvent = JSON.parse(e.data);
-          if (event.event === "connected") return;
-          setEvents((prev) => {
-            const exists = prev.find((p) => p.event === event.event);
-            if (exists) return prev;
-            return [...prev, event];
-          });
-          if (event.event === "job_completed" || event.event === "job_failed") {
-            setTimeout(fetchDoc, 500);
-            es.close();
-          }
-        } catch {}
-      };
-      es.onerror = () => es.close();
-    };
-
-    connectSSE();
-    const interval = setInterval(fetchDoc, 4000);
-    return () => {
-      sseRef.current?.close();
-      clearInterval(interval);
-    };
   }, [id]);
 
-  const handleSaveReview = async () => {
-    if (!id) return;
-    setSaving(true);
-    try {
-      await updateReview(id, editData);
-      toast.success("Review changes saved!");
-      setEditing(false);
-      fetchDoc();
-    } catch {
-      toast.error("Failed to save review");
-    } finally {
-      setSaving(false);
+  useEffect(() => {
+    if (!router.isReady || !id) return;
+    fetchDoc();
+
+    if (getAppMode() === "live" && getStoredUser()) {
+      liveDocumentService
+        .listAIConnections()
+        .then((list) => {
+          const active = list.filter((c) => c.is_active);
+          setConnections(active);
+          const def = active.find((c) => c.is_default) || active[0];
+          if (def) setReprocessConnId(def.id);
+        })
+        .catch(() => {});
     }
+
+    const unsub = subscribeToProgress(id, (event: ProgressEvent) => {
+      setDoc((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          progress: event.progress,
+          current_stage: event.event,
+          extracted_data: (event.data as Record<string, unknown>) || prev.extracted_data,
+          status:
+            event.progress === 100
+              ? "completed"
+              : event.event === "job_failed"
+              ? "failed"
+              : prev.status,
+          error_message: event.event === "job_failed" ? event.message : prev.error_message,
+        };
+      });
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [router.isReady, id, fetchDoc]);
+
+  const handleSaveReview = async (updatedData: Record<string, unknown>) => {
+    if (!id) return;
+    const updated = await updateReview(id, updatedData);
+    setDoc(updated);
   };
 
   const handleFinalize = async () => {
     if (!id) return;
+    setIsFinalizing(true);
     try {
-      await finalizeDocument(id);
-      toast.success("Document finalized!");
-      fetchDoc();
+      const updated = await finalizeDocument(id);
+      setDoc(updated);
+      toast.success("Document finalized");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Finalization failed";
+      const msg = err instanceof Error ? err.message : "Finalization failed";
       toast.error(msg);
+    } finally {
+      setIsFinalizing(false);
     }
   };
 
   const handleRetry = async () => {
     if (!id) return;
+    setRetrying(true);
     try {
-      await retryDocument(id);
-      toast.success("Job re-dispatched to Celery!");
-      setEvents([]);
-      fetchDoc();
-    } catch {
-      toast.error("Retry request failed");
+      const updated = await retryDocument(id);
+      setDoc(updated);
+      toast.success("Queued for reprocessing");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Retry failed";
+      toast.error(msg);
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleReprocess = async () => {
+    if (!id) return;
+    setReprocessing(true);
+    try {
+      const updated = await reprocessDocument(id, {
+        connectionId: reprocessConnId || undefined,
+      });
+      setDoc(updated);
+      toast.success("Document queued for fresh AI extraction");
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      toast.error(detail || (err instanceof Error ? err.message : "Reprocess failed"));
+    } finally {
+      setReprocessing(false);
     }
   };
 
@@ -172,342 +164,246 @@ export default function DocumentDetailPage() {
     setIsDeleting(true);
     try {
       await deleteDocument(id);
-      toast.success("Document deleted permanently");
-      router.push("/");
-    } catch {
-      toast.error("Deletion failed");
+      toast.success("Document deleted");
+      router.push("/documents");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Deletion failed";
+      toast.error(msg);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleExport = async (formatType: "json" | "csv") => {
+    if (!id) return;
+    try {
+      await exportDocument(id, formatType);
+      toast.success(`Exported as ${formatType.toUpperCase()}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Export failed";
+      toast.error(msg);
     }
   };
 
   if (loading) {
     return (
       <Layout>
-        <div className="space-y-4 max-w-5xl mx-auto">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-32 rounded-2xl bg-slate-900/50 animate-pulse border border-slate-800" />
-          ))}
+        <div className="p-16 text-center text-xs text-slate-500 space-y-3">
+          <div className="w-5 h-5 border-2 border-slate-600 border-t-slate-200 rounded-full animate-spin mx-auto" />
+          <div>Loading…</div>
         </div>
       </Layout>
     );
   }
 
-  if (!doc) return null;
+  if (notFound || !doc) {
+    return (
+      <Layout>
+        <div className="surface-card p-12 text-center space-y-4 max-w-md mx-auto my-12">
+          <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
+          <h2 className="text-sm font-semibold text-white">Document not found</h2>
+          <p className="text-xs text-slate-500">
+            This document may have been deleted or belongs to a different account.
+          </p>
+          <Link
+            href="/documents"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-white text-slate-900 hover:bg-slate-100 transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to documents</span>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
 
-  const currentData = (doc.reviewed_data || doc.extracted_data) as Record<string, unknown> | null;
-  const completedStages = events.map((e) => e.event);
-  const isActive = doc.status === "queued" || doc.status === "processing";
+  const isCompletedOrFinalized = doc.status === "completed" || doc.status === "finalized";
 
   return (
     <Layout>
-      {/* Delete Confirmation Modal */}
+      <Head>
+        <title>{`${doc.original_filename} — DocFlow`}</title>
+        <meta
+          name="description"
+          content={`Extracted data and processing details for ${doc.original_filename}.`}
+        />
+      </Head>
+
       <DeleteModal
         isOpen={showDeleteModal}
         onClose={() => !isDeleting && setShowDeleteModal(false)}
         onConfirm={handleConfirmDelete}
         itemName={doc.original_filename}
-        itemMeta={`${doc.file_type.toUpperCase()} • ${formatFileSize(doc.file_size)} • Task ID: ${doc.celery_task_id || "N/A"}`}
+        itemMeta={`${doc.file_type.toUpperCase()} · ${formatFileSize(doc.file_size)} · ${doc.id.slice(0, 8)}`}
         isDeleting={isDeleting}
       />
 
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Top bar with back button */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={doc.status} />
+      <div className="space-y-5">
+        {doc.is_synthetic && (
+          <div className="px-4 py-3 rounded-xl bg-cyan-950/40 border border-cyan-800/40 flex items-center gap-2.5 text-xs">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+            <span className="text-cyan-300/90">
+              This is a sample document. You can edit values, verify fields, save reviews, and export — all locally.
+            </span>
           </div>
-        </div>
+        )}
 
-        {/* HERO TITLE & ACTION BAR */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-indigo-500/15 bg-[#0d1020] shadow-xl">
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold font-heading text-white truncate max-w-2xl mb-2">
-              {doc.original_filename}
-            </h1>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-mono">
-              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                {doc.file_type.toUpperCase()}
-              </span>
-              <span>{formatFileSize(doc.file_size)}</span>
-              <span>•</span>
-              <span>Ingested {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}</span>
-              {doc.retry_count > 0 && (
-                <span className="text-amber-400 font-semibold">• Retried {doc.retry_count}x</span>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="space-y-2">
+            <Link
+              href="/documents"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Documents
+            </Link>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center">
+                <FileText className="w-4 h-4 text-slate-400" />
+              </div>
+              <h1 className="text-lg font-semibold text-white tracking-tight font-heading">
+                {doc.original_filename}
+              </h1>
+              <StatusBadge status={doc.status} />
+              {doc.is_synthetic && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-white/[0.05] text-slate-400 border border-white/[0.06]">
+                  sample
+                </span>
               )}
             </div>
           </div>
 
-          {/* ACTION BUTTONS */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Retry Button */}
-            {doc.status === "failed" && (
-              <button
-                onClick={handleRetry}
-                className="px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Retry Processing
-              </button>
-            )}
-
-            {/* Finalize Button */}
-            {doc.status === "completed" && doc.is_reviewed && (
-              <button
-                onClick={handleFinalize}
-                className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Finalize Document
-              </button>
-            )}
-
-            {/* Export JSON / CSV */}
-            {(doc.status === "completed" || doc.status === "finalized") && currentData && (
+            {isCompletedOrFinalized && (
               <>
-                <a
-                  href={exportDocument(doc.id, "json")}
-                  download
-                  className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition-all"
+                <button
+                  onClick={() => handleExport("json")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] transition-colors cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" /> JSON
-                </a>
-                <a
-                  href={exportDocument(doc.id, "csv")}
-                  download
-                  className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition-all"
+                  <Download className="w-3 h-3 text-cyan-400" />
+                  JSON
+                </button>
+                <button
+                  onClick={() => handleExport("csv")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] transition-colors cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" /> CSV
-                </a>
+                  <Download className="w-3 h-3 text-emerald-400" />
+                  CSV
+                </button>
+
+                {connections.length > 1 && (
+                  <select
+                    value={reprocessConnId}
+                    onChange={(e) => setReprocessConnId(e.target.value)}
+                    className="surface-input text-xs py-1.5 cursor-pointer"
+                  >
+                    {connections.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-[#0b1123]">
+                        {c.provider.toUpperCase()} · {c.model}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <button
+                  onClick={handleReprocess}
+                  disabled={reprocessing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3 h-3 text-violet-400 ${reprocessing ? "animate-spin" : ""}`} />
+                  {reprocessing ? "Reprocessing…" : "Reprocess"}
+                </button>
               </>
             )}
 
-            {/* Delete button triggering DeleteModal */}
+            {doc.status === "failed" && (
+              <button
+                onClick={handleRetry}
+                disabled={retrying}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer"
+              >
+                <RotateCcw className={`w-3 h-3 ${retrying ? "animate-spin" : ""}`} />
+                {retrying ? "Retrying…" : "Retry"}
+              </button>
+            )}
+
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="p-2 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
-              title="Delete Document"
+              className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 border border-white/[0.07] transition-colors cursor-pointer"
+              title="Delete"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* 2-COLUMN BENTO GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT COLUMN (1/3): PIPELINE STEPPER & METADATA */}
-          <div className="space-y-6">
-            {/* Live Progress Card */}
-            <div className="p-5 rounded-2xl border border-indigo-500/15 bg-[#0e1224] shadow-lg">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Execution Pipeline
-                </span>
-                <span className="text-lg font-bold font-mono text-indigo-400">
-                  {doc.progress}%
-                </span>
-              </div>
-              <ProgressBar progress={doc.progress} status={doc.status} size="md" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="surface-card p-4">
+            <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500">Type</div>
+            <div className="text-sm font-semibold text-white mt-1">{doc.file_type.toUpperCase()}</div>
+            <div className="text-[11px] text-slate-600 mt-0.5">{formatFileSize(doc.file_size)}</div>
+          </div>
 
-              {/* STAGE TIMELINE */}
-              <div className="mt-6 space-y-3">
-                {STAGE_ORDER.map((stage, idx) => {
-                  const done = completedStages.includes(stage) || (doc.status === "completed" || doc.status === "finalized");
-                  const active = isActive && doc.current_stage === stage;
-                  const isFailed = doc.status === "failed" && idx === completedStages.length;
-
-                  return (
-                    <div key={stage} className="flex items-start gap-3 text-xs">
-                      <div className="flex flex-col items-center mt-0.5">
-                        <div
-                          className={`
-                            w-4 h-4 rounded-full flex items-center justify-center transition-all
-                            ${
-                              done
-                                ? "bg-emerald-500 text-black"
-                                : active
-                                ? "bg-indigo-600 ring-4 ring-indigo-500/25 animate-pulse"
-                                : isFailed
-                                ? "bg-red-500 text-white"
-                                : "border border-slate-700 bg-slate-900"
-                            }
-                          `}
-                        >
-                          {done ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : null}
-                        </div>
-                        {idx < STAGE_ORDER.length - 1 && (
-                          <div className={`w-0.5 h-4 my-1 ${done ? "bg-emerald-500/40" : "bg-slate-800"}`} />
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className={`font-medium ${done ? "text-slate-200" : active ? "text-indigo-400 font-semibold" : "text-slate-400"}`}>
-                          {STAGE_LABELS[stage] || stage}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          <div className="surface-card p-4">
+            <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500">Added</div>
+            <div className="text-sm font-semibold text-white mt-1">
+              {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
             </div>
-
-            {/* TECHNICAL SYSTEM METADATA */}
-            <div className="p-5 rounded-2xl border border-slate-800 bg-[#0e1224] shadow-lg text-xs space-y-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
-                System Diagnostics
-              </span>
-
-              <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                <span className="text-slate-400">Internal File ID</span>
-                <span className="font-mono text-slate-300 truncate max-w-[150px]">{doc.id}</span>
-              </div>
-
-              <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                <span className="text-slate-400">Celery Task ID</span>
-                <span className="font-mono text-slate-300 truncate max-w-[150px]">
-                  {doc.celery_task_id || "Unassigned"}
-                </span>
-              </div>
-
-              <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                <span className="text-slate-400">MIME Type</span>
-                <span className="font-mono text-slate-300">{doc.mime_type || "N/A"}</span>
-              </div>
-
-              <div className="flex justify-between py-1.5">
-                <span className="text-slate-400">Review Status</span>
-                <span className={doc.is_reviewed ? "text-emerald-400 font-medium" : "text-amber-400 font-medium"}>
-                  {doc.is_reviewed ? "Verified by Reviewer" : "Unreviewed Draft"}
-                </span>
-              </div>
+            <div className="text-[11px] text-slate-600 mt-0.5">
+              {format(new Date(doc.created_at), "MMM d, yyyy HH:mm")}
             </div>
           </div>
 
-          {/* RIGHT COLUMN (2/3): EXTRACTED SCHEMA & AI INSIGHTS BENTO */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* AI COPILOT & INSIGHTS BENTO CARD */}
-            <div className="p-6 rounded-2xl border border-purple-500/25 bg-gradient-to-b from-[#140f28] to-[#0c0e1b] shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      AI Document Intelligence & Insights
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-purple-500/20 border border-purple-500/40 text-purple-300">
-                        COPILOT READY
-                      </span>
-                    </h3>
-                    <p className="text-[11px] text-purple-200/70">
-                      Automated classification and document synthesis powered by DocFlow pipeline.
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div className="surface-card p-4">
+            <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500">AI Provider</div>
+            <div className="text-sm font-semibold text-white mt-1">
+              {doc.ai_provider ? doc.ai_provider.toUpperCase() : "—"}
+            </div>
+            <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">
+              {doc.ai_model || `Retries: ${doc.retry_count}`}
+            </div>
+          </div>
 
-              {currentData ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3.5 rounded-xl border border-purple-500/15 bg-purple-950/20">
-                    <span className="text-[11px] font-medium text-purple-300 block mb-1">Detected Category</span>
-                    <span className="text-sm font-bold text-white">
-                      {(currentData.category as string) || "General Document"}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-purple-500/15 bg-purple-950/20">
-                    <span className="text-[11px] font-medium text-purple-300 block mb-1">Estimated Read Time / Words</span>
-                    <span className="text-sm font-bold text-white">
-                      {(currentData.word_count as number) || 0} words (~{Math.max(1, Math.round(((currentData.word_count as number) || 0) / 200))} min read)
-                    </span>
-                  </div>
-
-                  <div className="sm:col-span-2 p-3.5 rounded-xl border border-purple-500/15 bg-purple-950/20">
-                    <span className="text-[11px] font-medium text-purple-300 block mb-1">Executive Summary</span>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {(currentData.summary as string) || "No text summary available."}
-                    </p>
-                  </div>
-                </div>
+          <div className="surface-card p-4">
+            <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500">Review</div>
+            <div className="text-sm font-semibold text-white mt-1 flex items-center gap-1.5">
+              {doc.status === "finalized" ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-violet-400" />
+                  <span className="text-violet-300">Finalized</span>
+                </>
+              ) : doc.is_reviewed ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-emerald-300">Reviewed</span>
+                </>
               ) : (
-                <div className="py-6 text-center text-xs text-slate-400">
-                  Document is currently parsing. AI insights will appear once extraction is complete.
-                </div>
+                <>
+                  <Clock className="w-4 h-4 text-slate-500" />
+                  <span className="text-slate-400">Pending</span>
+                </>
               )}
             </div>
-
-            {/* EXTRACTED SCHEMA / JSON VIEWER & REVIEW EDITOR */}
-            <div className="p-6 rounded-2xl border border-indigo-500/15 bg-[#0c0e1b] shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <FileCode className="w-4 h-4 text-indigo-400" />
-                  <h3 className="text-sm font-bold text-white">Structured Output Data</h3>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {editing ? (
-                    <>
-                      <button
-                        onClick={() => setEditing(false)}
-                        className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300 hover:bg-slate-800 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSaveReview}
-                        disabled={saving}
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Save className="w-3.5 h-3.5" />
-                        {saving ? "Saving..." : "Save Review"}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setEditing(true)}
-                      className="px-3.5 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-xs font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      Edit Extracted Fields
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* EDITOR OR JSON PREVIEW */}
-              {editing ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-400">
-                    Reviewers can edit the extracted JSON schema directly before finalizing the document.
-                  </p>
-                  <textarea
-                    rows={16}
-                    value={JSON.stringify(editData, null, 2)}
-                    onChange={(e) => {
-                      try {
-                        setEditData(JSON.parse(e.target.value));
-                      } catch {}
-                    }}
-                    className="w-full p-4 rounded-xl bg-black/70 border border-slate-800 text-xs font-mono text-indigo-200 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              ) : (
-                <div className="rounded-xl border border-slate-800/80 bg-black/60 p-4 max-h-[500px] overflow-auto">
-                  <pre className="text-xs font-mono text-indigo-300 leading-relaxed">
-                    {currentData ? JSON.stringify(currentData, null, 2) : "// Awaiting worker results..."}
-                  </pre>
-                </div>
-              )}
-            </div>
+            <div className="text-[11px] text-slate-600 mt-0.5">Human verification</div>
           </div>
         </div>
+
+        <StageTracker
+          status={doc.status}
+          currentStage={doc.current_stage}
+          progress={doc.progress}
+          errorMessage={doc.error_message}
+        />
+
+        <SchemaInspector
+          extractedData={doc.extracted_data}
+          reviewedData={doc.reviewed_data}
+          isReviewed={doc.is_reviewed}
+          status={doc.status}
+          onSaveReview={handleSaveReview}
+          onFinalize={handleFinalize}
+          isFinalizing={isFinalizing}
+        />
       </div>
     </Layout>
   );

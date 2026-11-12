@@ -1,91 +1,81 @@
-import axios from "axios";
+import {
+  DocumentItem,
+  DocumentListResponse,
+  ProgressEvent,
+  Stats,
+  JobStatus,
+  AppMode,
+  BackendHealth,
+  ListDocumentsParams,
+} from "../types/document";
+import { documentRepository } from "../services/documentRepository";
+
+export type { DocumentItem as Document, DocumentListResponse, ProgressEvent, Stats, JobStatus, AppMode, BackendHealth };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export const api = axios.create({
-  baseURL: `${API_URL}/api/v1`,
-  timeout: 30000,
-});
+export const listDocuments = (params?: ListDocumentsParams) =>
+  documentRepository.listDocuments(params);
 
-export interface Document {
-  id: string;
-  filename: string;
-  original_filename: string;
-  file_size: number;
-  file_type: string;
-  mime_type?: string;
-  status: "queued" | "processing" | "completed" | "failed" | "finalized" | "cancelled";
-  celery_task_id?: string;
-  progress: number;
-  current_stage?: string;
-  error_message?: string;
-  retry_count: number;
-  extracted_data?: Record<string, unknown>;
-  reviewed_data?: Record<string, unknown>;
-  is_reviewed: boolean;
-  created_at: string;
-  updated_at: string;
-  completed_at?: string;
-}
-
-export interface DocumentListResponse {
-  items: Document[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-export interface ProgressEvent {
-  job_id: string;
-  event: string;
-  progress: number;
-  message: string;
-  data?: Record<string, unknown>;
-}
-
-export interface Stats {
-  [key: string]: number | undefined;
-  queued?: number;
-  processing?: number;
-  completed?: number;
-  failed?: number;
-  finalized?: number;
-}
-
-// API calls
-export const uploadDocuments = (files: File[]) => {
-  const form = new FormData();
-  files.forEach((f) => form.append("files", f));
-  // Do NOT set Content-Type header — let the browser set it with the correct multipart boundary
-  return api.post<Document[]>("/upload", form);
-};
-
-export const listDocuments = (params: {
-  page?: number;
-  page_size?: number;
-  status?: string;
-  search?: string;
-  sort_by?: string;
-  sort_order?: string;
-}) => api.get<DocumentListResponse>("/documents", { params });
-
-export const getDocument = (id: string) => api.get<Document>(`/documents/${id}`);
-
-export const getProgress = (id: string) => api.get<ProgressEvent>(`/documents/${id}/progress`);
+export const getDocument = (id: string) =>
+  documentRepository.getDocument(id);
 
 export const updateReview = (id: string, reviewed_data: Record<string, unknown>) =>
-  api.put<Document>(`/documents/${id}/review`, { reviewed_data });
+  documentRepository.updateReview(id, reviewed_data);
 
-export const finalizeDocument = (id: string) => api.post<Document>(`/documents/${id}/finalize`);
+export const finalizeDocument = (id: string) =>
+  documentRepository.finalizeDocument(id);
 
-export const retryDocument = (id: string) => api.post<Document>(`/documents/${id}/retry`);
+export const retryDocument = (id: string) =>
+  documentRepository.retryDocument(id);
 
-export const deleteDocument = (id: string) => api.delete(`/documents/${id}`);
+export const reprocessDocument = (
+  id: string,
+  options?: { connectionId?: string; documentType?: "auto" | "invoice" }
+) => documentRepository.reprocessDocument(id, options);
+
+export const deleteDocument = (id: string) =>
+  documentRepository.deleteDocument(id);
+
+export const uploadDocuments = (
+  files: File[],
+  options?: { documentType?: string; connectionId?: string }
+) => documentRepository.uploadDocuments(files, options);
+
+export const getStats = () =>
+  documentRepository.getStats();
 
 export const exportDocument = (id: string, format: "json" | "csv") =>
-  `${API_URL}/api/v1/documents/${id}/export/${format}`;
+  documentRepository.exportDocument(id, format);
 
-export const getStats = () => api.get<Stats>("/stats");
+export const exportBatchDocuments = (ids: string[], format: "json" | "csv") =>
+  documentRepository.exportBatch(ids, format);
+
+export const getAppMode = (): AppMode =>
+  documentRepository.getMode();
+
+export const setAppMode = (mode: AppMode) =>
+  documentRepository.setMode(mode);
+
+export const getBackendHealth = (): BackendHealth =>
+  documentRepository.getBackendHealth();
+
+export const checkBackendHealth = () =>
+  documentRepository.checkBackendHealth();
+
+export const resetDemoData = () =>
+  documentRepository.resetDemoData();
+
+export const subscribeModeChange = (cb: (mode: AppMode) => void) =>
+  documentRepository.subscribeModeChange(cb);
+
+export const subscribeHealthChange = (cb: (health: BackendHealth) => void) =>
+  documentRepository.subscribeHealthChange(cb);
+
+export const subscribeToProgress = (
+  docId: string,
+  cb: (event: ProgressEvent) => void
+) => documentRepository.subscribeToProgress(docId, cb);
 
 export const getSSEUrl = (id: string) =>
   `${API_URL}/api/v1/documents/${id}/stream`;
@@ -96,13 +86,23 @@ export const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+export const parseServerDate = (dateStr: string | Date | undefined): Date => {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  const s = String(dateStr).trim();
+  if (!s.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(s)) {
+    return new Date(`${s}Z`);
+  }
+  return new Date(s);
+};
+
 export const STATUS_COLORS: Record<string, string> = {
   queued: "text-amber-400 bg-amber-400/10 border-amber-400/30",
-  processing: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+  processing: "text-sky-400 bg-sky-400/10 border-sky-400/30",
   completed: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
-  failed: "text-red-400 bg-red-400/10 border-red-400/30",
+  failed: "text-rose-400 bg-rose-400/10 border-rose-400/30",
   finalized: "text-violet-400 bg-violet-400/10 border-violet-400/30",
-  cancelled: "text-gray-400 bg-gray-400/10 border-gray-400/30",
+  cancelled: "text-slate-400 bg-slate-400/10 border-slate-400/30",
 };
 
 export const STATUS_ICONS: Record<string, string> = {
