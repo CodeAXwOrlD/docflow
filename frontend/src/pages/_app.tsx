@@ -49,10 +49,8 @@ export default function App({ Component, pageProps }: AppProps) {
       </Head>
 
       <div
-        className={`min-h-full transition-all duration-200 ease-out ${
-          isTransitioning && !isFirstPaintRef.current
-            ? "opacity-75 translate-y-[3px]"
-            : "opacity-100 translate-y-0"
+        className={`min-h-full transition-opacity duration-200 ease-out ${
+          isTransitioning && !isFirstPaintRef.current ? "opacity-75" : "opacity-100"
         }`}
       >
         <Component {...pageProps} />

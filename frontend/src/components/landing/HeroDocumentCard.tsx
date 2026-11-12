@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { animate } from "animejs";
-import { FileText, CheckCircle2, Cpu, ArrowRight } from "lucide-react";
+import { FileText, CheckCircle2, ArrowRight } from "lucide-react";
 
 export default function HeroDocumentCard() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,69 +118,68 @@ export default function HeroDocumentCard() {
               <FileText className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-white tracking-tight">
+              <div className="text-xs font-semibold text-white tracking-tight text-left">
                 invoice_acme_corp_q3.pdf
               </div>
-              <div className="text-[11px] font-mono text-stone-400">
-                842 KB · 3 pages · SHA-256 verified
+              <div className="text-[11px] text-stone-400 text-left">
+                842 KB · 3 pages · Invoice
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
             <CheckCircle2 className="w-3 h-3" />
-            <span>99.4% confidence</span>
+            <span>99% confidence</span>
           </div>
         </div>
 
         {/* Card Body: Extraction Mapping */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4 text-xs font-mono">
-          <div className="p-3 rounded-lg bg-black/40 border border-white/5 space-y-1.5">
-            <div className="text-[10px] text-stone-500 uppercase tracking-wider flex items-center gap-1">
-              <Cpu className="w-3 h-3 text-teal-400" />
-              <span>Parsed Attributes</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4 text-xs">
+          <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2 text-left">
+            <div className="text-[11px] font-medium text-stone-400">
+              Extracted Details
             </div>
-            <div className="flex justify-between">
-              <span className="text-stone-400">vendor:</span>
-              <span className="text-stone-200 font-medium">Acme Logistics Corp</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-stone-400">Vendor</span>
+              <span className="text-stone-100 font-medium">Acme Logistics Corp</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-stone-400">invoice_no:</span>
-              <span className="text-teal-300 font-semibold">INV-2026-9042</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-stone-400">Invoice No.</span>
+              <span className="text-teal-300 font-medium">INV-2026-9042</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-stone-400">billing_date:</span>
-              <span className="text-stone-300">2026-09-14</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-stone-400">Billing Date</span>
+              <span className="text-stone-200">2026-09-14</span>
             </div>
           </div>
 
-          <div className="p-3 rounded-lg bg-black/40 border border-white/5 space-y-1.5">
-            <div className="text-[10px] text-stone-500 uppercase tracking-wider flex items-center gap-1">
-              <span>Financial Totals</span>
+          <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2 text-left">
+            <div className="text-[11px] font-medium text-stone-400">
+              Totals Verified
             </div>
-            <div className="flex justify-between">
-              <span className="text-stone-400">subtotal:</span>
-              <span className="text-stone-300">$1,850.00</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-stone-400">Subtotal</span>
+              <span className="text-stone-200 tabular-nums">$1,850.00</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-stone-400">tax (8.5%):</span>
-              <span className="text-stone-300">$157.25</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-stone-400">Tax (8.5%)</span>
+              <span className="text-stone-200 tabular-nums">$157.25</span>
             </div>
-            <div className="flex justify-between border-t border-white/5 pt-1">
-              <span className="text-stone-400 font-semibold">total_due:</span>
-              <span className="text-emerald-400 font-bold">$2,007.25</span>
+            <div className="flex justify-between border-t border-white/[0.06] pt-1.5">
+              <span className="text-stone-300 font-medium">Total Due</span>
+              <span className="text-emerald-400 font-semibold tabular-nums">$2,007.25</span>
             </div>
           </div>
         </div>
 
         {/* Card Footer */}
-        <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-stone-400">
+        <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-stone-400">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-            <span>Celery Worker: worker-fra-02</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>Math checks passed</span>
           </div>
-          <div className="flex items-center gap-1 text-teal-400 hover:text-teal-300 font-medium cursor-pointer">
-            <span>Inspect schema graph</span>
+          <div className="flex items-center gap-1 text-teal-400 hover:text-teal-300 font-medium">
+            <span>Ready for review</span>
             <ArrowRight className="w-3 h-3" />
           </div>
         </div>

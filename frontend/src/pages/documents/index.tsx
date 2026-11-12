@@ -36,7 +36,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Sparkles,
+  PlayCircle,
   AlertTriangle,
   ChevronDown,
   Download,
@@ -218,7 +218,7 @@ export default function DocumentsPage() {
         {mode === "demo" ? (
           <div className="px-4 py-3 rounded-xl bg-cyan-950/40 border border-cyan-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5 text-cyan-300/90">
-              <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+              <PlayCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>
                 <strong className="font-medium text-cyan-200">Demo mode</strong> — browsing pre-loaded sample documents. All edits are local only.
               </span>

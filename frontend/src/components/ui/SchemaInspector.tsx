@@ -5,7 +5,7 @@ import {
   CheckCircle2,
   Edit3,
   Save,
-  Sparkles,
+  BadgeCheck,
   Layers,
   AlertCircle,
   AlertTriangle,
@@ -378,7 +378,7 @@ export default function SchemaInspector({
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-sm cursor-pointer disabled:opacity-50"
                   title="Lock and finalize verified document schema"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-violet-200" />
+                  <BadgeCheck className="w-3.5 h-3.5 text-violet-200" />
                   <span>{isFinalizing ? "Finalizing..." : "Finalize Schema"}</span>
                 </button>
               )}
@@ -497,7 +497,7 @@ export default function SchemaInspector({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                        <span className="text-xs font-medium text-slate-400">
                           {label}
                         </span>
                         <div className="flex items-center gap-1.5">
@@ -528,22 +528,22 @@ export default function SchemaInspector({
                           onChange={(e) =>
                             updateInvoiceField("root", key, { value: e.target.value }, numeric)
                           }
-                          placeholder="Not present (null)"
-                          className="w-full bg-[#080d1e] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-400 font-mono"
+                          placeholder="Not found"
+                          className="w-full bg-[#080d1e] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                         />
                       ) : (
-                        <div className="text-xs font-mono text-white break-words">
+                        <div className="text-sm font-medium text-white break-words">
                           {hasValue ? (
                             String(field.value)
                           ) : (
-                            <span className="text-slate-600 italic">null (not extracted)</span>
+                            <span className="text-xs font-normal text-slate-500 italic">Not found in document</span>
                           )}
                         </div>
                       )}
 
                       {field.evidence && (
-                        <div className="flex items-start gap-1.5 text-[10px] text-slate-500 font-mono">
-                          <Quote className="w-3 h-3 flex-shrink-0 mt-0.5 text-slate-600" />
+                        <div className="flex items-start gap-1.5 text-[11px] text-slate-400">
+                          <Quote className="w-3 h-3 flex-shrink-0 mt-0.5 text-slate-500" />
                           <span className="line-clamp-2">{field.evidence}</span>
                         </div>
                       )}

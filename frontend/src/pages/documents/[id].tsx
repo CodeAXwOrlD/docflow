@@ -31,7 +31,7 @@ import {
   Download,
   RotateCcw,
   Trash2,
-  Sparkles,
+  PlayCircle,
   FileText,
   Clock,
   AlertTriangle,
@@ -241,7 +241,7 @@ export default function DocumentDetailPage() {
       <div className="space-y-5">
         {doc.is_synthetic && (
           <div className="px-4 py-3 rounded-xl bg-cyan-950/40 border border-cyan-800/40 flex items-center gap-2.5 text-xs">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+            <PlayCircle className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
             <span className="text-cyan-300/90">
               This is a sample document. You can edit values, verify fields, save reviews, and export — all locally.
             </span>

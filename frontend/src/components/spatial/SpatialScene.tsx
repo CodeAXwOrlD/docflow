@@ -315,14 +315,10 @@ export default function SpatialScene({ progress = 0 }: SpatialSceneProps) {
         Interactive 3D visualization illustrating DocFlow&apos;s data transformation from scattered unstructured document tokens into structured JSON schema fields.
       </span>
 
-      {/* Technical UI Overlay Indicators */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 backdrop-blur-md text-[11px] font-mono text-stone-300">
-        <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-        <span>SPATIAL TOKEN MODEL</span>
-      </div>
-
-      <div className="absolute bottom-4 right-4 z-10 text-[11px] font-mono text-stone-500">
-        DPR: 1.5 · DEMAND_FRAMELOOP
+      {/* Subtle visual indicator */}
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/50 border border-white/10 backdrop-blur-md text-[11px] text-stone-300">
+        <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+        <span>Document structure preview</span>
       </div>
     </div>
   );

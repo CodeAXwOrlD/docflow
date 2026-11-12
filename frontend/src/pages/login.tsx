@@ -3,7 +3,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import toast from "react-hot-toast";
-import { ArrowLeft, KeyRound, Lock, Mail, User as UserIcon, Sparkles } from "lucide-react";
+import { ArrowLeft, Lock, Mail, User as UserIcon } from "lucide-react";
 import { liveDocumentService } from "@/services/liveDocumentService";
 import { getStoredUser } from "@/lib/auth";
 import { setAppMode } from "@/lib/api";
@@ -68,24 +68,19 @@ export default function LoginPage() {
               setAppMode("demo");
               router.push("/documents");
             }}
-            className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
+            className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            Use Demo Mode
+            Try Demo Mode
           </button>
         </div>
 
         <div className="surface-card p-6 space-y-5">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 text-xs font-mono text-cyan-400">
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>LIVE CLUSTER AUTHENTICATION</span>
-            </div>
             <h1 className="text-xl font-semibold text-white font-heading">
               {tab === "login" ? "Sign in to DocFlow" : "Create your DocFlow account"}
             </h1>
-            <p className="text-xs text-slate-400">
-              Required in Live Mode to isolate your documents, encrypted BYOK API keys, and AI usage logs.
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Sign in to manage your documents, saved AI provider keys, and extraction history.
             </p>
           </div>
 
@@ -113,46 +108,46 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {tab === "register" && (
               <div>
-                <label className="block text-[11px] font-medium text-slate-400 mb-1.5">
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
                   Full Name
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="w-4 h-4 text-slate-500 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Jane Doe"
-                    className="surface-input w-full pl-9"
+                    className="surface-input w-full pl-10"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-slate-500 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
-                  className="surface-input w-full pl-9"
+                  className="surface-input w-full pl-10"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Lock className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-slate-500 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   required
@@ -160,7 +155,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={tab === "register" ? "Minimum 8 characters" : "Enter password"}
-                  className="surface-input w-full pl-9"
+                  className="surface-input w-full pl-10"
                 />
               </div>
             </div>

@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Database,
   Layers,
-  Sparkles,
+  BookOpen,
   Server,
   ExternalLink,
   ShieldCheck,
@@ -92,7 +92,7 @@ export default function Layout({ children }: LayoutProps) {
     { href: "/documents", label: "Documents", icon: LayoutDashboard },
     { href: "/upload", label: "Upload", icon: UploadCloud },
     { href: "/settings", label: "AI Settings", icon: KeyRound },
-    { href: "/", label: "Overview & Story", icon: Sparkles },
+    { href: "/", label: "Overview", icon: BookOpen },
   ];
 
   const getInitials = () => {
@@ -318,17 +318,17 @@ export default function Layout({ children }: LayoutProps) {
 
           <footer className="flex-shrink-0 border-t border-white/[0.07] px-6 py-3 text-[11px] text-slate-500">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-              <div className="flex items-center gap-4 flex-wrap justify-center font-mono">
+              <div className="flex items-center gap-4 flex-wrap justify-center">
                 {mode === "demo" ? (
                   <>
-                    <span className="flex items-center gap-1.5 text-cyan-500/80">
-                      <Sparkles className="w-3 h-3" />
-                      Demo mode — no data is sent anywhere
+                    <span className="flex items-center gap-1.5 text-cyan-400/90">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      Demo mode — data stays in your browser
                     </span>
                     <span className="text-slate-700">·</span>
                     <span className="flex items-center gap-1.5">
                       <ShieldCheck className="w-3 h-3 text-emerald-500/80" />
-                      Runs entirely in-browser
+                      Local sandbox
                     </span>
                   </>
                 ) : (
@@ -343,12 +343,12 @@ export default function Layout({ children }: LayoutProps) {
                     <span className="text-slate-700">·</span>
                     <span className="flex items-center gap-1.5">
                       <Server className="w-3 h-3 text-slate-500" />
-                      FastAPI + Celery + BYOK AI
+                      FastAPI + Celery
                     </span>
                     <span className="text-slate-700">·</span>
                     <span className="flex items-center gap-1.5">
                       <Layers className="w-3 h-3 text-slate-500" />
-                      Redis broker
+                      Redis queue
                     </span>
                   </>
                 )}

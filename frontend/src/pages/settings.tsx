@@ -13,7 +13,7 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
+  PlayCircle,
   Star,
   Trash2,
   Zap,
@@ -353,7 +353,7 @@ export default function SettingsPage() {
         {mode === "demo" ? (
           <div className="surface-card p-6 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-white">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <PlayCircle className="w-4 h-4 text-cyan-400" />
               <span>Demo Mode Active</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
@@ -388,8 +388,8 @@ export default function SettingsPage() {
                   <Plus className="w-4 h-4 text-cyan-400" />
                   <h2 className="text-sm font-semibold text-white">Add AI Provider Connection</h2>
                 </div>
-                <span className="text-[11px] font-mono text-slate-500">
-                  Backend-verified before save
+                <span className="text-[11px] text-slate-400">
+                  Verified on backend before saving
                 </span>
               </div>
 
@@ -518,7 +518,7 @@ export default function SettingsPage() {
                   <Cpu className="w-4 h-4 text-emerald-400" />
                   <h2 className="text-sm font-semibold text-white">Configured Provider Connections</h2>
                 </div>
-                <span className="text-xs font-mono text-slate-500">
+                <span className="text-xs text-slate-400">
                   {connections.length} saved
                 </span>
               </div>
@@ -572,7 +572,7 @@ export default function SettingsPage() {
                               )}
                             </div>
                             {conn.last_error && (
-                              <p className="text-[11px] text-rose-300 font-mono">{conn.last_error}</p>
+                              <p className="text-xs text-rose-300">{conn.last_error}</p>
                             )}
                           </div>
 

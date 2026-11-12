@@ -18,20 +18,20 @@ export default function SpatialFallback({ progress = 0.5 }: SpatialFallbackProps
       <div className="absolute inset-0 bg-[radial-gradient(#14b8a6_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
 
       <div className="relative z-10 w-full max-w-lg space-y-4">
-        <div className="flex items-center justify-between text-xs text-stone-400 font-mono border-b border-white/5 pb-2">
-          <span>PIPELINE ENGINE</span>
-          <span className="text-teal-400">
-            {step === 0 && "INGESTION: UNSTRUCTURED RAW"}
-            {step === 1 && "PREPROCESSING: TOKEN CHUNKING"}
-            {step === 2 && "INFERENCE: NEURAL SCAN"}
-            {step === 3 && "RESOLVED: STRUCTURED SCHEMA"}
+        <div className="flex items-center justify-between text-xs text-stone-400 border-b border-white/5 pb-2">
+          <span className="font-medium text-stone-300">Extraction Preview</span>
+          <span className="text-teal-400 font-medium">
+            {step === 0 && "1. Upload & parse text"}
+            {step === 1 && "2. Queue background task"}
+            {step === 2 && "3. Extract & validate fields"}
+            {step === 3 && "4. Ready for review"}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+        <div className="grid grid-cols-2 gap-4 text-xs">
           {/* Left panel: Raw input */}
-          <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
-            <div className="text-[10px] text-stone-500 uppercase tracking-wider">Raw Input</div>
+          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-2">
+            <div className="text-[11px] font-medium text-stone-400">Raw Document</div>
             <div className="space-y-1.5 text-stone-400 text-[11px]">
               <div className="h-2 w-3/4 bg-stone-700/60 rounded" />
               <div className="h-2 w-full bg-stone-700/40 rounded" />
@@ -42,19 +42,19 @@ export default function SpatialFallback({ progress = 0.5 }: SpatialFallbackProps
 
           {/* Right panel: Extracted output */}
           <div className="p-4 rounded-xl bg-teal-950/20 border border-teal-500/20 space-y-2">
-            <div className="text-[10px] text-teal-400/80 uppercase tracking-wider">Normalized Output</div>
+            <div className="text-[11px] font-medium text-teal-300">Structured Output</div>
             <div className="space-y-1.5 text-[11px]">
               <div className="flex justify-between text-stone-300">
-                <span className="text-stone-500">doc_id:</span>
-                <span className="text-teal-300 font-semibold">&quot;INV-2026-09&quot;</span>
+                <span className="text-stone-400">Invoice No.</span>
+                <span className="text-teal-300 font-medium">INV-2026-09</span>
               </div>
               <div className="flex justify-between text-stone-300">
-                <span className="text-stone-500">total:</span>
-                <span className="text-emerald-400">$1,420.00</span>
+                <span className="text-stone-400">Total</span>
+                <span className="text-emerald-400 font-medium tabular-nums">$1,420.00</span>
               </div>
               <div className="flex justify-between text-stone-300">
-                <span className="text-stone-500">status:</span>
-                <span className="text-teal-400">&quot;finalized&quot;</span>
+                <span className="text-stone-400">Status</span>
+                <span className="text-teal-400 font-medium">Verified</span>
               </div>
             </div>
           </div>

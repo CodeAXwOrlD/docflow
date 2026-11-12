@@ -169,7 +169,7 @@ export default function StageTracker({ status, currentStage, progress, errorMess
           <AlertCircle className="w-3.5 h-3.5 text-rose-400 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <div className="font-medium text-rose-300">Processing error</div>
-            <p className="text-rose-200/80 leading-relaxed font-mono text-[10px]">{errorMessage}</p>
+            <p className="text-rose-200/85 leading-relaxed text-xs">{errorMessage}</p>
           </div>
         </div>
       )}

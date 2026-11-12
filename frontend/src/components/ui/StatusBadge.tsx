@@ -1,5 +1,5 @@
 import React from "react";
-import { Clock, CheckCircle2, AlertTriangle, Sparkles, Loader2, XCircle } from "lucide-react";
+import { Clock, CheckCircle2, AlertTriangle, BadgeCheck, Loader2, XCircle } from "lucide-react";
 
 interface StatusBadgeProps {
   status: string;
@@ -43,7 +43,7 @@ export default function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
       bg: "bg-purple-500/15",
       border: "border-purple-500/30",
       text: "text-purple-300",
-      icon: <Sparkles className="w-3 h-3 text-purple-300" />,
+      icon: <BadgeCheck className="w-3 h-3 text-purple-300" />,
     },
     cancelled: {
       label: "Cancelled",

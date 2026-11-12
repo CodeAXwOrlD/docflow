@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Server, RotateCcw, Sparkles } from "lucide-react";
+import { Server, RotateCcw, PlayCircle } from "lucide-react";
 import {
   getAppMode,
   setAppMode,
@@ -90,7 +90,7 @@ export default function ModeSwitcher({ onDataRefresh, compact = false }: ModeSwi
       >
         {mode === "demo" ? (
           <>
-            <Sparkles className="w-3 h-3" />
+            <PlayCircle className="w-3 h-3" />
             <span>Demo</span>
           </>
         ) : (
